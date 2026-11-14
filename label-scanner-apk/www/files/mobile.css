@@ -1,0 +1,16 @@
+@media(max-width:860px){
+html,body{overflow-x:hidden}
+.shell{display:block}
+.side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:50;flex-direction:row;justify-content:space-around;gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line)}
+.side .brand,.side-foot{display:none}
+.nav{flex:1;flex-direction:column;gap:2px;font-size:11px;padding:8px 4px;justify-content:center;text-align:center;box-shadow:none!important}
+.content{padding:14px 14px calc(88px + env(safe-area-inset-bottom,0px))}
+.grid2,.grid2.eq,.scan-grid,.cols,.glance,.onb{grid-template-columns:1fr}
+.onb{min-height:0}.onb-form{padding:22px 16px}.onb-hero{padding:22px 16px}
+.verdict .big{width:104px;height:104px;font-size:38px}
+.nutgrid{grid-template-columns:1fr 1fr}
+.card{overflow-wrap:anywhere}
+img,video,canvas{max-width:100%;height:auto}
+input,select,textarea{font-size:16px;max-width:100%}
+h1{font-size:24px}
+}
