@@ -7,16 +7,22 @@ jobs:
       DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
-      - name: Find the app files (works at top level, in a subfolder, or inside an uploaded zip)
+      - name: Find the app files (zip named label-scanner-upload.zip wins; else loose files or any zip)
         run: |
           echo "Files in the repository:"; ls -la
           find_pkg() { find . -name package.json -not -path '*/node_modules/*' -not -path './.git/*' | awk '{print length($0) " " $0}' | sort -n | head -1 | cut -d' ' -f2-; }
-          PKG="$(find_pkg)"
-          if [ -z "$PKG" ]; then
-            while IFS= read -r z; do echo "Unzipping $z"; unzip -oq "$z" -d _unzipped || true; done < <(find . -maxdepth 3 -name '*.zip' -not -path './.git/*')
+          ZIP="$(find . -maxdepth 3 -name 'label-scanner-upload.zip' -not -path './.git/*' | head -1)"
+          if [ -n "$ZIP" ]; then
+            echo "Using $ZIP"; rm -rf _unzipped; unzip -oq "$ZIP" -d _unzipped
+            PKG="$(find _unzipped -maxdepth 2 -name package.json | head -1)"
+          else
             PKG="$(find_pkg)"
+            if [ -z "$PKG" ]; then
+              while IFS= read -r z; do echo "Unzipping $z"; unzip -oq "$z" -d _unzipped || true; done < <(find . -maxdepth 3 -name '*.zip' -not -path './.git/*')
+              PKG="$(find_pkg)"
+            fi
           fi
-          if [ -z "$PKG" ]; then echo "::error::package.json not found. Upload the app files (or the zip file itself) to the repository."; exit 1; fi
+          if [ -z "$PKG" ]; then echo "::error::package.json not found. Upload label-scanner-upload.zip (without unzipping) to the repository."; exit 1; fi
           DIR="$(dirname "$PKG")"
           for f in capacitor.config.json www/index.html scripts/prep.js; do
             [ -f "$DIR/$f" ] || { echo "::error::Missing $f in $DIR. Upload the complete app."; exit 1; }
@@ -44,7 +50,17 @@ jobs:
         if: env.DEBUG_KEYSTORE_B64 != ''
         run: mkdir -p ~/.android && echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
       - name: Build APK
+        id: build
+        continue-on-error: true
         working-directory: ${{ env.APP_DIR }}
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      # Safety net: if the build failed, retry without the optional voice plugin so you still get an APK.
+      - name: Retry without voice plugin
+        if: steps.build.outcome == 'failure'
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npm uninstall @capacitor-community/text-to-speech
+          npx cap sync android
+          cd android && ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with: { name: LabelScanner-APK, path: "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" }
