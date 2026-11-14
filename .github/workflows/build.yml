@@ -54,9 +54,55 @@ jobs:
           button{white-space:nowrap}
           .scan-box>.row>button,.scan-box>button{flex:1 1 100%}
           .row.nowrap button{flex:none}
-          body::after{content:"mobile v3";position:fixed;top:2px;right:6px;font-size:10px;opacity:.55;z-index:99;pointer-events:none}
+          body::after{content:"mobile v4";position:fixed;top:2px;right:6px;font-size:10px;opacity:.55;z-index:99;pointer-events:none}
           }
           CSS
+          cat > www/shim.js <<'JS'
+          (function () {
+            var base = location.origin + '/vendor/tess';
+            var worker = null, chain = Promise.resolve(), workerErr = '';
+            function simd() { try { return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])); } catch (e) { return false; } }
+            function withTimeout(p, ms, msg) {
+              var t; return Promise.race([p, new Promise(function (_, rej) { t = setTimeout(function () { rej(new Error(msg + (workerErr ? ': ' + workerErr : ''))); }, ms); })])
+                .then(function (v) { clearTimeout(t); return v; }, function (e) { clearTimeout(t); throw e; });
+            }
+            async function getWorker() {
+              if (worker) return worker;
+              var core = base + '/core/' + (simd() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js');
+              var list = [
+                { workerBlobURL: false, corePath: core, ms: 45000 },
+                { workerBlobURL: true, corePath: core, ms: 45000 },
+                { workerBlobURL: false, corePath: base + '/core', ms: 60000 }
+              ], errs = [];
+              for (var i = 0; i < list.length; i++) {
+                try {
+                  workerErr = '';
+                  var o = { workerPath: base + '/worker.min.js', langPath: base + '/lang', cacheMethod: 'none', workerBlobURL: list[i].workerBlobURL, corePath: list[i].corePath,
+                    errorHandler: function (e) { workerErr = String((e && e.message) || e).slice(0, 120); console.error('[ocr]', e); } };
+                  worker = await withTimeout(Tesseract.createWorker('eng', 1, o), list[i].ms, 'OCR engine did not start');
+                  return worker;
+                } catch (e) { worker = null; errs.push('#' + (i + 1) + ' ' + String((e && e.message) || e)); }
+              }
+              throw new Error(errs.join(' | ').slice(0, 260));
+            }
+            async function reset() { var w = worker; worker = null; if (w) { try { await w.terminate(); } catch (e) {} } }
+            function scanImage(dataUrl) {
+              var run = async function () {
+                try {
+                  var w = await getWorker();
+                  var r = await withTimeout(w.recognize(dataUrl), 90000, 'OCR timed out');
+                  return r.data.text;
+                } catch (e) { await reset(); throw e; }
+              };
+              var p = chain.then(run, run); chain = p.catch(function () {}); return p;
+            }
+            window.api = {
+              scanImage: scanImage,
+              lookupBarcode: function (c) { return window.__lookup.fetchProduct(c); },
+              findSimilar: function (t) { return window.__lookup.findSimilar(t); }
+            };
+          })();
+          JS
           cat > www/camera-plus.js <<'JS'
           (function () {
             var md = navigator.mediaDevices;
@@ -67,7 +113,17 @@ jobs:
                   var P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera;
                   if (P && P.requestPermissions) await P.requestPermissions({ permissions: ['camera'] });
                 } catch (e) { console.warn('camera permission', e); }
-                return orig(c);
+                var hi = c;
+                try {
+                  if (c && c.video) {
+                    var v = c.video === true ? {} : Object.assign({}, c.video);
+                    if (!v.width) v.width = { ideal: 1920 };
+                    if (!v.height) v.height = { ideal: 1080 };
+                    v.advanced = [{ focusMode: 'continuous' }];
+                    hi = Object.assign({}, c, { video: v });
+                  }
+                } catch (e) { hi = c; }
+                try { return await orig(hi); } catch (e) { return orig(c); }
               };
             }
             var timer = null, auto = false, on = false, dark = 0, btn = null;
@@ -121,9 +177,9 @@ jobs:
               s=s.replace('<script src="shim.js"></script>','<script src="shim.js"></script><script src="camera-plus.js"></script>',1)
           open(p,'w').write(s)
           a='www/app.js'; t=open(a).read()
-          old="const fail = () => { status('Camera not available. Use Upload photo or paste the text instead.');"
-          new="const fail = e => { console.error(e); status('Camera not available' + (e && (e.name || e.message) ? ' (' + (e.name || e.message) + ')' : '') + '. Use Upload photo or paste the text instead.');"
-          t=t.replace(old,new); open(a,'w').write(t)
+          t=t.replace("const fail = () => { status('Camera not available. Use Upload photo or paste the text instead.');","const fail = e => { console.error(e); status('Camera not available' + (e && (e.name || e.message) ? ' (' + (e.name || e.message) + ')' : '') + '. Use Upload photo or paste the text instead.');")
+          t=t.replace("} catch (e) { status('Could not read the image. Try a sharper, brighter photo, or paste the text.'); }","} catch (e) { console.error(e); status('Could not read the image (' + String((e && (e.message || e.name)) || 'unknown').slice(0, 200) + '). Try a sharper, brighter photo, or paste the text.'); }")
+          open(a,'w').write(t)
           PY
           npm install
           npm install @capacitor/camera@^6.0.0
