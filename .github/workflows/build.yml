@@ -43,7 +43,7 @@ jobs:
           .grid2,.grid2.eq,.scan-grid,.cols,.glance{grid-template-columns:1fr}
           .verdict .big{width:104px;height:104px;font-size:38px}
           .nutgrid{grid-template-columns:1fr 1fr}
-          .card{overflow-wrap:anywhere}
+          .card{overflow-wrap:break-word}
           img,video,canvas{max-width:100%;height:auto}
           input,select,textarea{font-size:16px;max-width:100%}
           h1{font-size:24px}
@@ -54,7 +54,17 @@ jobs:
           button{white-space:nowrap}
           .scan-box>.row>button,.scan-box>button{flex:1 1 100%}
           .row.nowrap button{flex:none}
-          body::after{content:"mobile v4";position:fixed;top:2px;right:6px;font-size:10px;opacity:.55;z-index:99;pointer-events:none}
+          td,th{overflow-wrap:normal;word-break:normal}
+          table:has(th:nth-child(4)){display:block;width:100%}
+          table:has(th:nth-child(4)) tbody{display:block}
+          table:has(th:nth-child(4)) tr{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
+          table:has(th:nth-child(4)) tr:first-child{display:none}
+          table:has(th:nth-child(4)) td{display:block;padding:0;border:0}
+          table:has(th:nth-child(4)) td:nth-child(1){font-weight:700;grid-column:1;grid-row:1}
+          table:has(th:nth-child(4)) td:nth-child(3){grid-column:2;grid-row:1;color:var(--muted);text-transform:capitalize}
+          table:has(th:nth-child(4)) td:nth-child(2){grid-column:1/-1;grid-row:2}
+          table:has(th:nth-child(4)) td:nth-child(4){grid-column:1/-1;grid-row:3;color:var(--muted);font-size:14px}
+          body::after{content:"mobile v5";position:fixed;top:2px;right:6px;font-size:10px;opacity:.55;z-index:99;pointer-events:none}
           }
           CSS
           cat > www/shim.js <<'JS'
@@ -70,9 +80,9 @@ jobs:
               if (worker) return worker;
               var core = base + '/core/' + (simd() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js');
               var list = [
-                { workerBlobURL: false, corePath: core, ms: 45000 },
-                { workerBlobURL: true, corePath: core, ms: 45000 },
-                { workerBlobURL: false, corePath: base + '/core', ms: 60000 }
+                { workerBlobURL: false, corePath: core, ms: 25000 },
+                { workerBlobURL: true, corePath: core, ms: 25000 },
+                { workerBlobURL: false, corePath: base + '/core', ms: 40000 }
               ], errs = [];
               for (var i = 0; i < list.length; i++) {
                 try {
@@ -153,13 +163,23 @@ jobs:
             }
             function stop() { if (timer) clearInterval(timer); timer = null; on = false; paint(); }
             function start() {
-              stop(); ensureBtn(); auto = false; dark = 0; paint();
+              stop(); ensureBtn(); warm(); auto = false; dark = 0; paint();
               timer = setInterval(function () {
                 if (auto) return;
                 var b = brightness(); if (b === null) return;
                 dark = b < 80 ? dark + 1 : 0;
                 if (dark >= 2) { auto = true; setTorch(true); }
               }, 600);
+            }
+            var warmed = false;
+            function warm() {
+              if (warmed || !window.api) return; warmed = true;
+              var c = document.createElement('canvas'); c.width = 240; c.height = 70;
+              var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 240, 70); x.fillStyle = '#000'; x.font = 'bold 40px sans-serif'; x.fillText('Salt', 20, 50);
+              window.api.scanImage(c.toDataURL('image/png')).catch(function (e) {
+                warmed = false; var s = document.getElementById('status');
+                if (s) s.textContent = 'Text reader could not start: ' + String((e && e.message) || e).slice(0, 220);
+              });
             }
             function init() {
               var a = document.getElementById('camStart'), z = document.getElementById('camStop');
