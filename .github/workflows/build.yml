@@ -1,217 +1,27 @@
 name: Build APK
-on:
-  push:
-    branches: [main, master]
-  workflow_dispatch:
-permissions:
-  contents: write
+on: { push: { branches: [main, master] }, workflow_dispatch: {} }
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
+      DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-      - name: Build
-        run: |
-          set -e
-          CFG=$(find . -name capacitor.config.json -not -path '*/node_modules/*' | head -1)
-          if [ -z "$CFG" ]; then echo "ERROR: capacitor.config.json not found"; exit 1; fi
-          cd "$(dirname "$CFG")"
-          echo "APK_DIR=$PWD" >> $GITHUB_ENV
-          cat >> www/style.css <<'CSS'
-          @media(max-width:860px){
-
-          .onb{display:block;min-height:0}
-          .onb-hero{position:static!important;min-height:0!important;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 20px;gap:8px}
-          .onb-hero h1{font-size:26px}.onb-hero p{font-size:14px}
-          .vp{display:none}
-          .onb-form{padding:18px 16px 32px;max-width:none}
-          .shell{display:block}
-          .side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:50;flex-direction:row;justify-content:space-around;gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line)}
-          .side .brand,.side-foot{display:none}
-          .nav{flex:1;flex-direction:column;gap:2px;font-size:11px;padding:8px 4px;justify-content:center;text-align:center;box-shadow:none!important}
-          .content{padding:14px 14px calc(88px + env(safe-area-inset-bottom,0px))}
-          .grid2,.grid2.eq,.scan-grid,.cols,.glance{grid-template-columns:1fr}
-          .verdict .big{width:104px;height:104px;font-size:38px}
-          .nutgrid{grid-template-columns:1fr 1fr}
-          .card{overflow-wrap:break-word}
-          img,video,canvas{max-width:100%;height:auto}
-          input,select,textarea{font-size:16px;max-width:100%}
-          h1{font-size:24px}
-          .scan-grid>*,.grid2>*,.cols>*,.glance>*,.row>*{min-width:0}
-          .scan-box{box-sizing:border-box;max-width:100%;padding:12px}
-          .card{padding:16px;box-sizing:border-box;max-width:100%}
-          .row .grow{min-width:0;flex:1 1 100%}
-          button{white-space:nowrap}
-          .scan-box>.row>button,.scan-box>button{flex:1 1 100%}
-          .row.nowrap button{flex:none}
-          td,th{overflow-wrap:normal;word-break:normal}
-          table:has(th:nth-child(4)){display:block;width:100%}
-          table:has(th:nth-child(4)) tbody{display:block}
-          table:has(th:nth-child(4)) tr{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:center}
-          table:has(th:nth-child(4)) tr:first-child{display:none}
-          table:has(th:nth-child(4)) td{display:block;padding:0;border:0}
-          table:has(th:nth-child(4)) td:nth-child(1){font-weight:700;grid-column:1;grid-row:1}
-          table:has(th:nth-child(4)) td:nth-child(3){grid-column:2;grid-row:1;color:var(--muted);text-transform:capitalize}
-          table:has(th:nth-child(4)) td:nth-child(2){grid-column:1/-1;grid-row:2}
-          table:has(th:nth-child(4)) td:nth-child(4){grid-column:1/-1;grid-row:3;color:var(--muted);font-size:14px}
-          body::after{content:"mobile v5";position:fixed;top:2px;right:6px;font-size:10px;opacity:.55;z-index:99;pointer-events:none}
-          }
-          CSS
-          cat > www/shim.js <<'JS'
-          (function () {
-            var base = location.origin + '/vendor/tess';
-            var worker = null, chain = Promise.resolve(), workerErr = '';
-            function simd() { try { return WebAssembly.validate(new Uint8Array([0,97,115,109,1,0,0,0,1,5,1,96,0,1,123,3,2,1,0,10,10,1,8,0,65,0,253,15,253,98,11])); } catch (e) { return false; } }
-            function withTimeout(p, ms, msg) {
-              var t; return Promise.race([p, new Promise(function (_, rej) { t = setTimeout(function () { rej(new Error(msg + (workerErr ? ': ' + workerErr : ''))); }, ms); })])
-                .then(function (v) { clearTimeout(t); return v; }, function (e) { clearTimeout(t); throw e; });
-            }
-            async function getWorker() {
-              if (worker) return worker;
-              var core = base + '/core/' + (simd() ? 'tesseract-core-simd-lstm.wasm.js' : 'tesseract-core-lstm.wasm.js');
-              var list = [
-                { workerBlobURL: false, corePath: core, ms: 25000 },
-                { workerBlobURL: true, corePath: core, ms: 25000 },
-                { workerBlobURL: false, corePath: base + '/core', ms: 40000 }
-              ], errs = [];
-              for (var i = 0; i < list.length; i++) {
-                try {
-                  workerErr = '';
-                  var o = { workerPath: base + '/worker.min.js', langPath: base + '/lang', cacheMethod: 'none', workerBlobURL: list[i].workerBlobURL, corePath: list[i].corePath,
-                    errorHandler: function (e) { workerErr = String((e && e.message) || e).slice(0, 120); console.error('[ocr]', e); } };
-                  worker = await withTimeout(Tesseract.createWorker('eng', 1, o), list[i].ms, 'OCR engine did not start');
-                  return worker;
-                } catch (e) { worker = null; errs.push('#' + (i + 1) + ' ' + String((e && e.message) || e)); }
-              }
-              throw new Error(errs.join(' | ').slice(0, 260));
-            }
-            async function reset() { var w = worker; worker = null; if (w) { try { await w.terminate(); } catch (e) {} } }
-            function scanImage(dataUrl) {
-              var run = async function () {
-                try {
-                  var w = await getWorker();
-                  var r = await withTimeout(w.recognize(dataUrl), 90000, 'OCR timed out');
-                  return r.data.text;
-                } catch (e) { await reset(); throw e; }
-              };
-              var p = chain.then(run, run); chain = p.catch(function () {}); return p;
-            }
-            window.api = {
-              scanImage: scanImage,
-              lookupBarcode: function (c) { return window.__lookup.fetchProduct(c); },
-              findSimilar: function (t) { return window.__lookup.findSimilar(t); }
-            };
-          })();
-          JS
-          cat > www/camera-plus.js <<'JS'
-          (function () {
-            var md = navigator.mediaDevices;
-            if (md && md.getUserMedia) {
-              var orig = md.getUserMedia.bind(md);
-              md.getUserMedia = async function (c) {
-                try {
-                  var P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Camera;
-                  if (P && P.requestPermissions) await P.requestPermissions({ permissions: ['camera'] });
-                } catch (e) { console.warn('camera permission', e); }
-                var hi = c;
-                try {
-                  if (c && c.video) {
-                    var v = c.video === true ? {} : Object.assign({}, c.video);
-                    if (!v.width) v.width = { ideal: 1920 };
-                    if (!v.height) v.height = { ideal: 1080 };
-                    v.advanced = [{ focusMode: 'continuous' }];
-                    hi = Object.assign({}, c, { video: v });
-                  }
-                } catch (e) { hi = c; }
-                try { return await orig(hi); } catch (e) { return orig(c); }
-              };
-            }
-            var timer = null, auto = false, on = false, dark = 0, btn = null;
-            function video() { return document.getElementById('video'); }
-            function track() { var v = video(), s = v && v.srcObject; return s && s.getVideoTracks && s.getVideoTracks()[0]; }
-            function paint() { if (btn) btn.textContent = on ? 'Flash: ON' : 'Flash: OFF'; }
-            async function setTorch(v) {
-              var t = track(); if (!t) return false;
-              try { await t.applyConstraints({ advanced: [{ torch: v }] }); on = v; paint(); return true; }
-              catch (e) { if (btn) btn.textContent = 'Flash unavailable'; return false; }
-            }
-            function ensureBtn() {
-              if (btn) return;
-              var wrap = document.getElementById('camWrap'); if (!wrap) return;
-              btn = document.createElement('button'); btn.type = 'button';
-              btn.style.cssText = 'position:absolute;top:8px;right:8px;z-index:5;padding:8px 12px;border-radius:20px;border:0;background:rgba(0,0,0,.6);color:#fff;font-weight:700;font-size:13px';
-              btn.onclick = function () { setTorch(!on); };
-              wrap.appendChild(btn); paint();
-            }
-            function brightness() {
-              var v = video(); if (!v || !v.videoWidth) return null;
-              var c = document.createElement('canvas'); c.width = 32; c.height = 24;
-              var g = c.getContext('2d'); g.drawImage(v, 0, 0, 32, 24);
-              var d = g.getImageData(0, 0, 32, 24).data, sum = 0;
-              for (var i = 0; i < d.length; i += 4) sum += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-              return sum / (d.length / 4);
-            }
-            function stop() { if (timer) clearInterval(timer); timer = null; on = false; paint(); }
-            function start() {
-              stop(); ensureBtn(); warm(); auto = false; dark = 0; paint();
-              timer = setInterval(function () {
-                if (auto) return;
-                var b = brightness(); if (b === null) return;
-                dark = b < 80 ? dark + 1 : 0;
-                if (dark >= 2) { auto = true; setTorch(true); }
-              }, 600);
-            }
-            var warmed = false;
-            function warm() {
-              if (warmed || !window.api) return; warmed = true;
-              var c = document.createElement('canvas'); c.width = 240; c.height = 70;
-              var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 240, 70); x.fillStyle = '#000'; x.font = 'bold 40px sans-serif'; x.fillText('Salt', 20, 50);
-              window.api.scanImage(c.toDataURL('image/png')).catch(function (e) {
-                warmed = false; var s = document.getElementById('status');
-                if (s) s.textContent = 'Text reader could not start: ' + String((e && e.message) || e).slice(0, 220);
-              });
-            }
-            function init() {
-              var a = document.getElementById('camStart'), z = document.getElementById('camStop');
-              if (a) a.addEventListener('click', start);
-              if (z) z.addEventListener('click', stop);
-            }
-            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
-          })();
-          JS
-          python3 - <<'PY'
-          import re
-          p='www/index.html'; s=open(p).read()
-          s=re.sub(r'(<meta http-equiv="Content-Security-Policy" content=")[^"]*(")', r"\1default-src 'self'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' data: blob: https://world.openfoodfacts.org; font-src 'self' data:\2", s, 1)
-          if 'camera-plus.js' not in s:
-              s=s.replace('<script src="shim.js"></script>','<script src="shim.js"></script><script src="camera-plus.js"></script>',1)
-          open(p,'w').write(s)
-          a='www/app.js'; t=open(a).read()
-          t=t.replace("const fail = () => { status('Camera not available. Use Upload photo or paste the text instead.');","const fail = e => { console.error(e); status('Camera not available' + (e && (e.name || e.message) ? ' (' + (e.name || e.message) + ')' : '') + '. Use Upload photo or paste the text instead.');")
-          t=t.replace("} catch (e) { status('Could not read the image. Try a sharper, brighter photo, or paste the text.'); }","} catch (e) { console.error(e); status('Could not read the image (' + String((e && (e.message || e.name)) || 'unknown').slice(0, 200) + '). Try a sharper, brighter photo, or paste the text.'); }")
-          open(a,'w').write(t)
-          PY
-          npm install
-          npm install @capacitor/camera@^6.0.0
-          node scripts/prep.js
-          npx cap add android
-          sed -i 's#</manifest>#<uses-permission android:name="android.permission.CAMERA" /><uses-feature android:name="android.hardware.camera" android:required="false" /></manifest>#' android/app/src/main/AndroidManifest.xml
-          npx cap sync android
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
-      - name: Publish download link
-        run: |
-          cp "$APK_DIR/android/app/build/outputs/apk/debug/app-debug.apk" LabelScanner.apk
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest LabelScanner.apk --target "${{ github.sha }}" --title "Label Scanner (latest)" --notes "Download LabelScanner.apk and install on Android."
+        with: { node-version: 20, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17, cache: gradle }
+      - run: npm ci
+      - run: node scripts/prep.js
+      - run: npx cap add android
+      - name: Add camera permission
+        run: sed -i 's#</manifest>#<uses-permission android:name="android.permission.CAMERA" /><uses-feature android:name="android.hardware.camera" android:required="false" /></manifest>#' android/app/src/main/AndroidManifest.xml
+      - run: npx cap sync android
+      # Optional: a fixed signing key lets each new APK install OVER the old one (keeps your data).
+      # Without it every CI run signs with a brand-new random key and Android refuses the update.
+      - name: Restore fixed debug signing key
+        if: env.DEBUG_KEYSTORE_B64 != ''
+        run: mkdir -p ~/.android && echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
+      - run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        with: { name: LabelScanner-APK, path: android/app/build/outputs/apk/debug/app-debug.apk }
