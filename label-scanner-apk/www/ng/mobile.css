@@ -1,0 +1,27 @@
+@media(max-width:860px){
+
+.onb{display:block;min-height:0}
+.onb-hero{position:static!important;min-height:0!important;padding:calc(20px + env(safe-area-inset-top,0px)) 18px 20px;gap:8px}
+.onb-hero h1{font-size:26px}.onb-hero p{font-size:14px}
+.vp{display:none}
+.onb-form{padding:18px 16px 32px;max-width:none}
+.shell{display:block}
+.side{position:fixed;left:0;right:0;bottom:0;top:auto;height:auto;z-index:50;flex-direction:row;justify-content:space-around;gap:0;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));border-right:0;border-top:1px solid var(--line)}
+.side .brand,.side-foot{display:none}
+.nav{flex:1;flex-direction:column;gap:2px;font-size:11px;padding:8px 4px;justify-content:center;text-align:center;box-shadow:none!important}
+.content{padding:14px 14px calc(88px + env(safe-area-inset-bottom,0px))}
+.grid2,.grid2.eq,.scan-grid,.cols,.glance{grid-template-columns:1fr}
+.verdict .big{width:104px;height:104px;font-size:38px}
+.nutgrid{grid-template-columns:1fr 1fr}
+.card{overflow-wrap:anywhere}
+img,video,canvas{max-width:100%;height:auto}
+input,select,textarea{font-size:16px;max-width:100%}
+h1{font-size:24px}
+.scan-grid>*,.grid2>*,.cols>*,.glance>*,.row>*{min-width:0}
+.scan-box{box-sizing:border-box;max-width:100%;padding:12px}
+.card{padding:16px;box-sizing:border-box;max-width:100%}
+.row .grow{min-width:0;flex:1 1 100%}
+button{white-space:nowrap}
+.scan-box>.row>button,.scan-box>button{flex:1 1 100%}
+.row.nowrap button{flex:none}
+}
