@@ -90,3 +90,11 @@ jobs:
           cd android && ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with: { name: NutriShield-APK, path: "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" }
+- name: Update Permanent APK Link
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp -f "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" NutriShield.apk
+          gh release upload latest NutriShield.apk --clobber || gh release create latest NutriShield.apk --title "NutriShield" --notes "Latest NutriShield APK"
+          gh release edit latest --title "NutriShield" --notes "Download the latest NutriShield APK below." || true
