@@ -4,9 +4,6 @@ on:
     branches: [main, master]
   workflow_dispatch: {}
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -48,6 +45,7 @@ jobs:
           LOGO="$(find . -maxdepth 2 \( -name 'logo.png' -o -name '1794688712297.png' -o -name '*.png' \) -not -path './_unzipped/*' -not -path './.git/*' | head -1)"
           if [ -n "$LOGO" ]; then
             cp -f "$LOGO" "$DIR/www/logo.png"
+            echo "LOGO_PATH=$LOGO" >> "$GITHUB_ENV"
             echo "Copied $LOGO to $DIR/www/logo.png"
           fi
 
@@ -119,10 +117,9 @@ jobs:
           EOF
           fi
 
-          # 4. Install Pillow and generate Android Launcher Icons from www/logo.png
+          # 4. Generate Android Launcher Icons from www/logo.png if present
           if [ -f "www/logo.png" ]; then
-            python3 -m pip install --quiet pillow || true
-            python3 - << 'PYEOF' || true
+            python3 - << 'PYEOF'
           import os
           from PIL import Image
           im = Image.open('www/logo.png').convert('RGBA')
@@ -171,23 +168,7 @@ jobs:
           npx cap sync android
           cd android && ./gradlew assembleDebug --no-daemon
 
-      - name: Rename APK to NutriShield.apk
-        run: |
-          cp -f "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" "${{ env.APP_DIR }}/NutriShield.apk"
-
       - uses: actions/upload-artifact@v4
         with:
           name: NutriShield-APK
-          path: "${{ env.APP_DIR }}/NutriShield.apk"
-
-      - name: Publish Permanent Latest APK Link (GitHub Release)
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: "NutriShield Latest APK"
-          body: "Direct download for the latest NutriShield Android APK."
-          files: "${{ env.APP_DIR }}/NutriShield.apk"
-          prerelease: false
-          make_latest: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk"
