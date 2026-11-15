@@ -1,0 +1,1020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: https://world.openfoodfacts.org; img-src 'self' data: blob: https://*.openfoodfacts.org; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' data: blob: https://world.openfoodfacts.org">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>NutriShield™ — Know Before You Use.</title>
+<link rel="icon" href="logo.png">
+<style>
+@font-face{font-family:"Plus Jakarta Sans";src:url(fonts/plus-jakarta-sans-latin-wght-normal.woff2) format("woff2");font-weight:200 800;font-display:swap}
+:root{
+  --bg:#F0FDF4;--surface:#FFFFFF;--surface2:#ECFDF5;--ink:#052E16;--muted:#3F6251;--line:#BBF7D0;
+  --brand:#00A859;--brand-dark:#044E29;--bright-green:#00E676;--good-green:#00C853;
+  --bright-red:#FF1744;--bright-amber:#FFB300;--bright-orange:#FF6D00;
+  --shadow:0 6px 24px rgba(5,46,22,.08);--r:18px;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,sans-serif;
+}
+:root[data-theme=dark]{
+  --bg:#06150E;--surface:#0D261A;--surface2:#133524;--ink:#ECFDF5;--muted:#99C2AE;--line:#1E4D35;
+  --brand:#00E676;--brand-dark:#052E16;--shadow:0 8px 28px rgba(0,0,0,.45);
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme=light]){
+    --bg:#06150E;--surface:#0D261A;--surface2:#133524;--ink:#ECFDF5;--muted:#99C2AE;--line:#1E4D35;
+    --brand:#00E676;--brand-dark:#052E16;--shadow:0 8px 28px rgba(0,0,0,.45);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--font);padding-bottom:84px}
+h1,h2,h3,h4{margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+.muted{color:var(--muted)}.small{font-size:12.5px}
+input,select,textarea{width:100%;padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;margin-top:4px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+button{font:inherit;font-weight:700;padding:11px 16px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+button:active{transform:scale(.97)}
+button.primary{background:linear-gradient(135deg,#00E676,#00A859);border-color:#00C853;color:#032211;box-shadow:0 4px 14px rgba(0,200,83,.35)}
+button.danger{background:linear-gradient(135deg,#FF1744,#D50000);border-color:#FF1744;color:#fff;box-shadow:0 4px 14px rgba(255,23,68,.35)}
+button.amber{background:linear-gradient(135deg,#FFD600,#FFAB00);border-color:#FFB300;color:#2B1700}
+
+/* Splash */
+#splash{position:fixed;inset:0;z-index:999;background:radial-gradient(circle at 50% 30%,#ffffff 0%,#e3faec 55%,#00A859 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;transition:opacity .4s}
+#splash.out{opacity:0;pointer-events:none}
+.logo-box{width:128px;height:128px;border-radius:28px;background:#fff;box-shadow:0 14px 34px rgba(0,120,60,.25);display:grid;place-items:center;overflow:hidden;margin-bottom:14px}
+.logo-box img{width:100%;height:100%;object-fit:cover}
+.brand-title{font-size:32px;font-weight:900;color:#052E16;letter-spacing:-.03em}
+.brand-title span{color:#00A859}
+.brand-sub{font-size:14px;font-weight:700;color:#094224;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+
+/* Topbar & Layout */
+.topbar{position:sticky;top:0;z-index:40;background:var(--surface);border-bottom:2px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:var(--shadow)}
+.brand-row{display:flex;align-items:center;gap:10px}
+.brand-row img,.brand-row svg{width:42px;height:42px;border-radius:11px;object-fit:cover;background:#fff;border:1.5px solid var(--line)}
+.wrap{max-width:880px;margin:0 auto;padding:16px}
+.card{background:var(--surface);border:2px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}}
+
+/* Chips & Badges */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:99px;font-size:12.5px;font-weight:800}
+.chip.good{background:#00E676;color:#022C14}
+.chip.mod{background:#FFD600;color:#332200}
+.chip.bad{background:#FF1744;color:#FFFFFF}
+.pill-toggle{padding:7px 13px;border-radius:99px;font-size:13px;border:2px solid var(--line);background:var(--surface2);cursor:pointer;font-weight:700}
+.pill-toggle.on{background:var(--good-green);border-color:var(--good-green);color:#032211}
+
+/* Camera & Google Lens Viewfinder */
+.cam-stage{position:relative;border-radius:18px;overflow:hidden;background:#000;border:3px solid var(--bright-green);margin:12px 0}
+.cam-stage video{width:100%;max-height:380px;display:block;object-fit:cover}
+.lens-hud{position:absolute;inset:10% 6%;border:3px solid #00E676;border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.42);pointer-events:none;overflow:hidden}
+.lens-beam{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#00E676,#FFFFFF,#00E676,transparent);box-shadow:0 0 14px #00E676;animation:scanbeam 2.1s ease-in-out infinite}
+@keyframes scanbeam{0%,100%{top:6%}50%{top:92%}}
+.cam-controls{display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:rgba(5,46,22,.92);justify-content:center}
+
+/* Score Ring & Verdict */
+.verdict-banner{border-radius:20px;padding:22px;display:flex;align-items:center;gap:22px;color:#fff;margin-bottom:16px}
+.verdict-banner.v-good{background:linear-gradient(135deg,#00C853,#009624);color:#02230E}
+.verdict-banner.v-mod{background:linear-gradient(135deg,#FFD600,#FF8F00);color:#261600}
+.verdict-banner.v-bad{background:linear-gradient(135deg,#FF1744,#B71C1C);color:#FFFFFF}
+.score-ring{width:112px;height:112px;border-radius:50%;background:#fff;color:#052E16;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 8px 22px rgba(0,0,0,.22);border:6px solid rgba(255,255,255,.65)}
+.score-ring b{font-size:38px;line-height:1;font-weight:900}
+.score-ring span{font-size:11px;font-weight:800;opacity:.75}
+@media(max-width:560px){.verdict-banner{flex-direction:column;text-align:center}}
+
+/* Alerts */
+.alert-red{background:#FF1744;color:#fff;padding:15px 18px;border-radius:16px;font-weight:800;margin-bottom:14px;box-shadow:0 8px 20px rgba(255,23,68,.35)}
+.alert-green{background:#00E676;color:#032211;padding:13px 18px;border-radius:16px;font-weight:800;margin-bottom:14px}
+
+/* Ingredient & Nutrition Bars */
+.ing-item{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;background:var(--surface2)}
+.score-bar{height:9px;background:rgba(0,0,0,.12);border-radius:99px;overflow:hidden;margin:6px 0}
+.score-bar i{display:block;height:100%;border-radius:99px}
+.app-box{background:var(--surface);border-left:4px solid var(--brand);padding:8px 11px;border-radius:8px;margin-top:6px;font-size:13px}
+
+/* Bottom Nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--surface);border-top:2px solid var(--line);display:flex;justify-content:space-around;padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+.bnav button{flex:1;border:0;background:none;flex-direction:column;gap:3px;font-size:12px;padding:6px;color:var(--muted)}
+.bnav button.active{color:var(--brand);font-weight:900}
+</style>
+</head>
+<body>
+
+<!-- Fallback SVG if logo.png hasn't loaded -->
+<svg width="0" height="0" style="position:absolute"><defs>
+  <symbol id="ns-shield" viewBox="0 0 120 120">
+    <rect width="120" height="120" rx="26" fill="#ffffff"/>
+    <path d="M60 12 L100 26 V56 C100 84 82 102 60 110 C38 102 20 84 20 56 V26 Z" fill="none" stroke="#00A859" stroke-width="8"/>
+    <rect x="38" y="38" width="5" height="30" fill="#052E16"/><rect x="47" y="38" width="3" height="30" fill="#052E16"/>
+    <rect x="54" y="38" width="6" height="30" fill="#052E16"/><rect x="64" y="38" width="4" height="30" fill="#052E16"/>
+    <rect x="72" y="38" width="6" height="30" fill="#052E16"/><rect x="81" y="38" width="3" height="30" fill="#052E16"/>
+    <path d="M60 95 C60 70 80 55 104 52 C100 80 84 96 60 95 Z" fill="#00E676"/>
+  </symbol>
+</defs></svg>
+
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="logo-box">
+    <img src="logo.png" alt="NutriShield Logo" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+    <svg width="96" height="96" style="display:none"><use href="#ns-shield"/></svg>
+  </div>
+  <div class="brand-title">Nutri<span>Shield</span>™</div>
+  <div class="brand-sub">Know Before You Use.</div>
+</div>
+
+<!-- TOP HEADER -->
+<header class="topbar">
+  <div class="brand-row">
+    <img src="logo.png" alt="NutriShield" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+    <svg width="42" height="42" style="display:none"><use href="#ns-shield"/></svg>
+    <div>
+      <div style="font-weight:900;font-size:18px;line-height:1.1">Nutri<span style="color:var(--brand)">Shield</span>™</div>
+      <div class="small muted" id="hdrProfileTag">Know Before You Use.</div>
+    </div>
+  </div>
+  <div class="row">
+    <span class="chip good" title="Point 10: 100% Rule-Based Science, Zero AI">⚡ No AI • Rule-Based</span>
+    <button type="button" id="themeCycleBtn" style="padding:7px 11px;font-size:13px">🌗 Theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 1. LOGIN / HEALTH PROFILE VIEW (Points 2, 18, 19, 20, 24, 25) -->
+  <section id="viewProfile" hidden>
+    <div class="card" style="border-top:6px solid var(--good-green)">
+      <h2>🛡️ Set Up Your NutriShield™ Profile</h2>
+      <p class="muted small">Personalizes allergy warnings, daily intake advice, and health condition checks. Saved 100% on your device (Point 16).</p>
+      <div class="grid2" style="margin-top:10px">
+        <div><label><b>Your Name *</b></label><input id="pName" placeholder="e.g. Aarav"></div>
+        <div><label><b>Your Age (1–120) *</b></label><input id="pAge" type="number" min="1" max="120" placeholder="e.g. 26"></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label><b>Select Life-Stage Mode (Point 18)</b></label>
+        <select id="pMode">
+          <option value="adult">🧑 Adult Mode (Standard)</option>
+          <option value="kids">🧒 Kids Mode (Under 13 — strict dye & caffeine check)</option>
+          <option value="pregnancy">🤰 Pregnancy Mode (Strict caffeine, alcohol, saccharin check)</option>
+          <option value="older">🧓 Old Age / Senior Mode (60+ — sodium, sugar & heart focus)</option>
+        </select>
+      </div>
+
+      <div style="margin-top:14px">
+        <label><b>Quick-Tap Allergies (Point 2)</b></label>
+        <div class="row" id="allergyChips" style="margin:6px 0">
+          <button type="button" class="pill-toggle" data-alg="peanut">🥜 Peanut</button>
+          <button type="button" class="pill-toggle" data-alg="milk">🥛 Milk / Dairy</button>
+          <button type="button" class="pill-toggle" data-alg="gluten">🌾 Gluten / Wheat</button>
+          <button type="button" class="pill-toggle" data-alg="soy">🫘 Soy</button>
+          <button type="button" class="pill-toggle" data-alg="egg">🥚 Egg</button>
+          <button type="button" class="pill-toggle" data-alg="nut">🌰 Tree Nuts</button>
+          <button type="button" class="pill-toggle" data-alg="sesame">🌱 Sesame</button>
+          <button type="button" class="pill-toggle" data-alg="shellfish">🦐 Shellfish</button>
+          <button type="button" class="pill-toggle" data-alg="sulphite">🍷 Sulphites</button>
+        </div>
+        <input id="pAllergies" placeholder="Or type allergies separated by commas (e.g. peanut, milk, gluten)">
+      </div>
+
+      <div style="margin-top:14px">
+        <label><b>Common Health Conditions / Diseases (Point 18)</b></label>
+        <div class="row" id="condBoxes" style="margin-top:6px">
+          <label class="pill-toggle"><input type="checkbox" value="diabetes"> 🩸 Diabetes</label>
+          <label class="pill-toggle"><input type="checkbox" value="bp"> ❤️ High Blood Pressure</label>
+          <label class="pill-toggle"><input type="checkbox" value="heart"> 🫀 Heart / Cholesterol</label>
+          <label class="pill-toggle"><input type="checkbox" value="kidney"> 🫘 Kidney Disease</label>
+          <label class="pill-toggle"><input type="checkbox" value="weight"> ⚖️ Weight Loss</label>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <label><b>Language (Point 20)</b></label>
+          <select id="pLang">
+            <option value="en">English (Active)</option>
+            <option disabled>हिन्दी — Hindi (Coming Later)</option>
+            <option disabled>Español — Spanish (Coming Later)</option>
+            <option disabled>Français — French (Coming Later)</option>
+            <option disabled>العربية — Arabic (Coming Later)</option>
+          </select>
+        </div>
+        <div>
+          <label><b>Country (Point 24 — Independent of Language)</b></label>
+          <select id="pCountry">
+            <option value="IN">🇮🇳 India</option>
+            <option value="US">🇺🇸 United States</option>
+            <option value="GB">🇬🇧 United Kingdom</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="AU">🇦🇺 Australia</option>
+            <option value="AE">🇦🇪 UAE</option>
+            <option value="SG">🇸🇬 Singapore</option>
+            <option value="DE">🇩🇪 Germany</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <label><b>Theme Mode (Point 19)</b></label>
+        <div class="row">
+          <button type="button" class="pill-toggle" data-theme-btn="auto">📱 System Auto</button>
+          <button type="button" class="pill-toggle" data-theme-btn="light">☀️ Bright Light</button>
+          <button type="button" class="pill-toggle" data-theme-btn="dark">🌙 Dark Mode</button>
+        </div>
+      </div>
+
+      <div class="grid2" style="margin-top:14px;opacity:.75">
+        <div><label><b>Email <span class="chip mod">Coming Later (Point 25)</span></b></label><input disabled placeholder="Cloud sync in future update"></div>
+        <div><label><b>Mobile <span class="chip mod">Coming Later (Point 25)</span></b></label><input disabled placeholder="OTP & sync in future update"></div>
+      </div>
+
+      <p id="pErr" style="color:var(--bright-red);font-weight:800;margin:10px 0 0"></p>
+      <div class="row" style="margin-top:14px">
+        <button type="button" class="primary" id="saveProfileBtn" style="flex:1;padding:14px">✅ Save Profile & Start Scanning</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. MAIN SCANNER VIEW -->
+  <section id="viewScan" hidden>
+    <!-- Category Bar (Point 15) -->
+    <div class="row" style="margin-bottom:12px;overflow-x:auto;flex-wrap:nowrap">
+      <span class="chip good">🍎 Food & Beverages (Active)</span>
+      <span class="chip" style="border:1.5px dashed var(--line);color:var(--muted)">💄 Cosmetics (Coming Later)</span>
+      <span class="chip" style="border:1.5px dashed var(--line);color:var(--muted)">🧴 Skincare (Coming Later)</span>
+      <span class="chip" style="border:1.5px dashed var(--line);color:var(--muted)">💊 Medicines (Coming Later)</span>
+    </div>
+
+    <!-- Google Lens + Smart Camera & Barcode Scanner Card (Points 1, 9, 21) -->
+    <div class="card" style="border-top:6px solid var(--bright-green)">
+      <div class="row" style="justify-content:space-between">
+        <div>
+          <h2>🔍 Google Lens Text & Barcode Scanner</h2>
+          <p class="muted small">Scans barcodes live OR reads ingredients & nutrition labels and gives 2 applications per product & ingredient.</p>
+        </div>
+      </div>
+
+      <!-- Live Camera Viewfinder -->
+      <div id="camStage" class="cam-stage" hidden>
+        <video id="video" autoplay playsinline muted></video>
+        <div class="lens-hud"><div class="lens-beam"></div></div>
+        <div class="cam-controls">
+          <button type="button" class="primary" id="snapLensBtn">📸 Snap & Read Label (Lens)</button>
+          <button type="button" id="torchBtn">🔦 Torch</button>
+          <button type="button" id="flipCamBtn">🔄 Flip</button>
+          <button type="button" class="danger" id="stopCamBtn">✕ Close</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button type="button" class="primary" id="startCamBtn">🎥 Open Live Lens & Barcode Camera</button>
+        <button type="button" class="amber" id="nativeCamBtn">📷 Phone Camera Snap</button>
+        <input id="camIn" type="file" accept="image/*" capture="environment" hidden>
+        <button type="button" id="uploadPhotoBtn">🖼️ Upload Label Photo</button>
+        <input id="fileIn" type="file" accept="image/*" hidden>
+      </div>
+
+      <!-- Barcode & Text Input -->
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <label class="small"><b>🔢 Barcode Lookup (Open Food Facts + Offline Cache)</b></label>
+          <div class="row" style="flex-wrap:nowrap">
+            <input id="bcInput" inputmode="numeric" placeholder="Enter 8–13 digit barcode (e.g. 5449000000996)">
+            <button type="button" class="primary" id="bcLookupBtn">Go</button>
+          </div>
+        </div>
+        <div>
+          <label class="small"><b>⚡ Try Instant Sample Scans</b></label>
+          <div class="row">
+            <button type="button" class="pill-toggle" data-demo="oats">🥣 Healthy Oats</button>
+            <button type="button" class="pill-toggle" data-demo="noodles">🍜 Instant Noodles</button>
+            <button type="button" class="pill-toggle" data-demo="cola">🥤 Fizzy Cola</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="small"><b>📝 Scanned / Pasted Ingredients & Nutrition Text (Editable)</b></label>
+        <textarea id="labelText" rows="3" placeholder="Ingredients: Whole wheat flour, oats, almonds, honey...&#10;Energy 380 kcal, Sugars 6 g, Fat 8 g, Saturated fat 1.2 g, Salt 0.2 g, Fibre 9 g, Protein 12 g"></textarea>
+        <div class="row" style="margin-top:8px">
+          <button type="button" class="primary" id="analyzeTextBtn">⚡ Analyze Ingredients & Nutrition</button>
+          <button type="button" id="clearScanBtn">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <p id="scanStatus" style="margin:10px 0 0;font-weight:800;color:var(--brand)"></p>
+    </div>
+
+    <!-- RESULTS CONTAINER -->
+    <div id="resultArea"></div>
+  </section>
+
+  <!-- 3. FAVORITES & HISTORY VIEW (Point 11, 16) -->
+  <section id="viewHistory" hidden>
+    <div class="card">
+      <h2>⭐ Favorites & Scan History</h2>
+      <p class="muted small">Stored locally on your device. Server sync coming in a future release.</p>
+      <div id="favListWrap" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- 4. SETTINGS, VOICE & FEEDBACK VIEW (Points 12, 13, 14, 17, 19, 20, 24, 25) -->
+  <section id="viewSettings" hidden>
+    <div class="card">
+      <h2>👤 Your Health Profile</h2>
+      <div id="settingsProfileSummary" class="muted" style="margin-bottom:10px"></div>
+      <button type="button" class="primary" id="editProfileBtn">✏️ Edit Profile, Mode & Allergies</button>
+    </div>
+
+    <div class="card">
+      <h2>🔊 Voice Assistant (Point 17)</h2>
+      <label class="row" style="cursor:pointer">
+        <input type="checkbox" id="autoVoiceToggle" style="width:20px;height:20px">
+        <span><b>Automatically speak scan results aloud</b></span>
+      </label>
+      <div class="row" style="margin-top:10px">
+        <button type="button" id="testVoiceBtn">🔊 Test Voice Assistant</button>
+        <button type="button" id="stopVoiceBtn">⏹️ Stop Speaking</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⭐ Rate Satisfaction & Send Feedback (Points 12, 13, 14)</h2>
+      <p class="small muted">How satisfied are you with NutriShield™?</p>
+      <div class="row" id="starBar" style="margin:8px 0">
+        <button type="button" data-star="1">1 ★</button>
+        <button type="button" data-star="2">2 ★</button>
+        <button type="button" data-star="3">3 ★</button>
+        <button type="button" data-star="4">4 ★</button>
+        <button type="button" data-star="5">5 ★</button>
+      </div>
+      <textarea id="fbInput" rows="3" placeholder="Send feedback or report a scanning / product issue..."></textarea>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="primary" id="sendFbBtn">📩 Save Feedback</button>
+        <button type="button" class="danger" id="reportIssueBtn">⚠️ Report Issue / Problem</button>
+      </div>
+      <p id="fbStatus" class="small" style="color:var(--brand);font-weight:800;margin-top:6px"></p>
+    </div>
+  </section>
+</main>
+
+<!-- BOTTOM NAVIGATION -->
+<nav class="bnav">
+  <button type="button" data-tab="scan" class="active">🔍<span>Scanner</span></button>
+  <button type="button" data-tab="history">⭐<span>Favorites</span></button>
+  <button type="button" data-tab="settings">⚙️<span>Settings</span></button>
+</nav>
+
+<!-- Load offline OCR & Barcode engines unpacked by scripts/prep.js -->
+<script src="vendor/tess/tesseract.min.js"></script>
+<script src="vendor/zxing.min.js"></script>
+<script src="lookup-web.js"></script>
+<script src="shim.js"></script>
+<script src="barcode.js"></script>
+<script src="nutrition.js"></script>
+<script src="ingredients.js"></script>
+<script src="engine.js"></script>
+<script src="advice.js"></script>
+<script src="features.js"></script>
+<script src="countries.js"></script>
+<script src="smartscan.js"></script>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // Splash fade-out
+  setTimeout(() => {
+    const sp = $('splash');
+    if (sp) { sp.classList.add('out'); setTimeout(() => sp.hidden = true, 420); }
+  }, 950);
+
+  // Two Practical Applications Generator for Ingredients & Products (Point 1)
+  function getIngredientApps(ingItem) {
+    const n = (ingItem.name || '').toLowerCase();
+    if (/sugar|syrup|dextrose|fructose|maltodextrin|honey|jaggery/.test(n))
+      return ['Food Formulation: Provides sweetness, browning, and texture bulk in baked goods & drinks.', 'Culinary / Household Use: Used in home baking, fruit preserves, and fermentation starters.'];
+    if (/oil|butter|fat|ghee|shortening/.test(n))
+      return ['Food Formulation: Carries fat-soluble flavors, creates crispness, and tenderizes dough.', 'Culinary / Household Use: Everyday pan cooking, frying, salad dressings, and moisture barrier.'];
+    if (/flour|wheat|oats|rice|corn|semolina|barley|malt/.test(n))
+      return ['Food Formulation: Primary structural carbohydrate, thickener, and dietary energy base.', 'Culinary / Household Use: Used for bread, chapati, porridge, batters, and natural soup thickening.'];
+    if (/acid|citric|ascorbic|vinegar|lactic|tartaric/.test(n))
+      return ['Food Formulation: Regulates pH acidity, sharpens tangy flavor, and prevents microbial spoilage.', 'Culinary / Household Use: Prevents cut-fruit browning, marinades, and natural kitchen descaling.'];
+    if (/benzoate|sorbate|nitrite|nitrate|sulphite|propionate|tbhq|bha|bht/.test(n))
+      return ['Food Formulation: Antimicrobial or antioxidant preservative extending shelf life.', 'Industrial / Storage Use: Prevents mold, yeast, and rancidity in packaged foods and cosmetics.'];
+    if (/colour|color|tartrazine|yellow|red|blue|caramel|turmeric|carotene|annatto/.test(n))
+      return ['Food Formulation: Restores or imparts visual color appeal to processed foods and drinks.', 'Culinary / Craft Use: Decorative food tinting, confectionery icing, and visual product grading.'];
+    if (/lecithin|gum|pectin|carrageenan|starch|gelatin|glycer/.test(n))
+      return ['Food Formulation: Emulsifier and stabilizer that keeps oil and water from separating.', 'Culinary / Cosmetic Use: Thickens sauces, jams, frostings, and lotion/gel textures.'];
+    if (/milk|whey|casein|cheese|cream|egg|soy|peanut|almond|cashew|chickpea|lentil/.test(n))
+      return ['Food Formulation: Adds complete protein structure, creamy mouthfeel, and browning.', 'Dietary / Culinary Use: Muscle-repair nutrition, smoothies, baking, and savory cooking.'];
+    return ['Food Formulation: Functional ingredient contributing flavor, texture, or stability.', 'Everyday Use: Standard culinary or packaged food component; check score for daily suitability.'];
+  }
+
+  function getProductApps(product, ing, nut) {
+    const name = product ? (product.name || '') : 'Scanned Food Product';
+    const kcal = nut && nut.kcal ? nut.kcal : null;
+    const app1 = kcal && kcal > 350
+      ? `1. Quick Energy & Satiety Source: Provides ${kcal} kcal per 100g—useful as a pre-activity energy boost or portion-controlled snack.`
+      : `1. Direct Dietary & Meal Pairing: Can be consumed directly or paired with fibre/protein-rich whole foods to balance glycemic load.`;
+    const app2 = (ing && ing.high > 0)
+      ? `2. Occasional Treat / Recipe Topping: Because it contains high-hazard additives, use sparingly as an occasional garnish rather than a daily staple.`
+      : `2. Everyday Pantry & Lunchbox Use: Suitable for regular meal prep, travel snacks, or family tiffins when stored in a cool, dry place.`;
+    return [app1, app2];
+  }
+
+  // Built-in Same-Type Benchmark Products for Instant Comparison (Point 7)
+  const BENCHMARKS = [
+    { key: 'bench-oats', name: 'Rolled Oats & Almonds Bowl', score: 88, ingScore: 90, nutScore: 85, high: 0, n: { kcal: 375, sugars: 4.5, sat: 1.4, salt: 0.1, fibre: 9.5, protein: 13 } },
+    { key: 'bench-biscuit', name: 'Standard Cream Biscuit', score: 34, ingScore: 36, nutScore: 31, high: 1, n: { kcal: 490, sugars: 32, sat: 11, salt: 0.6, fibre: 1.5, protein: 5 } },
+    { key: 'bench-noodles', name: 'Instant Fried Noodles', score: 29, ingScore: 32, nutScore: 25, high: 2, n: { kcal: 430, sugars: 3.5, sat: 8.5, salt: 2.4, fibre: 2.0, protein: 8 } }
+  ];
+
+  // Theme Manager (Point 19)
+  const TK = 'labelscanner.theme';
+  function applyTheme(mode) {
+    if (mode === 'light' || mode === 'dark') document.documentElement.dataset.theme = mode;
+    else { delete document.documentElement.dataset.theme; mode = 'auto'; }
+    try { localStorage.setItem(TK, mode); } catch (e) {}
+    document.querySelectorAll('[data-theme-btn]').forEach(b => b.classList.toggle('on', b.dataset.themeBtn === mode));
+  }
+  applyTheme(localStorage.getItem(TK) || 'auto');
+  document.querySelectorAll('[data-theme-btn]').forEach(b => b.onclick = () => applyTheme(b.dataset.themeBtn));
+  $('themeCycleBtn').onclick = () => {
+    const cur = localStorage.getItem(TK) || 'auto';
+    applyTheme(cur === 'auto' ? 'light' : cur === 'light' ? 'dark' : 'auto');
+  };
+
+  // Profile Manager (Points 2, 18, 20, 24, 25)
+  const PK = 'labelscanner.profile';
+  let profile = null;
+  try { profile = JSON.parse(localStorage.getItem(PK)); } catch (e) {}
+
+  function syncAllergyChips() {
+    const list = ($('pAllergies').value || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+    document.querySelectorAll('#allergyChips [data-alg]').forEach(btn => {
+      btn.classList.toggle('on', list.includes(btn.dataset.alg));
+    });
+  }
+  document.querySelectorAll('#allergyChips [data-alg]').forEach(btn => {
+    btn.onclick = () => {
+      const alg = btn.dataset.alg;
+      let list = ($('pAllergies').value || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (list.map(x => x.toLowerCase()).includes(alg)) list = list.filter(x => x.toLowerCase() !== alg);
+      else list.push(alg);
+      $('pAllergies').value = list.join(', ');
+      syncAllergyChips();
+    };
+  });
+  $('pAllergies').oninput = syncAllergyChips;
+
+  function updateHeaderProfile() {
+    if (!profile) return;
+    const modes = { adult: 'Adult Mode', kids: 'Kids Mode', pregnancy: 'Pregnancy Mode', older: 'Senior Mode' };
+    $('hdrProfileTag').textContent = `${profile.name} • ${modes[profile.mode] || 'Adult'} • ${profile.country || 'IN'}`;
+    $('settingsProfileSummary').innerHTML = `<b>${esc(profile.name)}</b> (Age ${esc(profile.age)}) • Mode: <b>${esc(modes[profile.mode])}</b><br>Allergies: <b>${profile.allergies && profile.allergies.length ? esc(profile.allergies.join(', ')) : 'None'}</b><br>Conditions: <b>${profile.conditions && profile.conditions.length ? esc(profile.conditions.join(', ')) : 'None'}</b>`;
+  }
+
+  function switchTab(tab) {
+    stopCamera();
+    $('viewProfile').hidden = tab !== 'profile';
+    $('viewScan').hidden = tab !== 'scan';
+    $('viewHistory').hidden = tab !== 'history';
+    $('viewSettings').hidden = tab !== 'settings';
+    document.querySelectorAll('.bnav button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'history') renderHistory();
+    if (tab === 'settings') updateHeaderProfile();
+  }
+  document.querySelectorAll('.bnav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+  $('saveProfileBtn').onclick = () => {
+    const name = $('pName').value.trim();
+    const age = parseInt($('pAge').value, 10);
+    if (!name) { $('pErr').textContent = 'Please enter your name.'; return; }
+    if (!(age >= 1 && age <= 120)) { $('pErr').textContent = 'Please enter a valid age between 1 and 120.'; return; }
+    profile = {
+      name, age,
+      mode: $('pMode').value,
+      country: $('pCountry').value,
+      allergies: $('pAllergies').value.split(',').map(s => s.trim()).filter(Boolean),
+      conditions: Array.from(document.querySelectorAll('#condBoxes input:checked')).map(i => i.value)
+    };
+    try { localStorage.setItem(PK, JSON.stringify(profile)); } catch (e) {}
+    $('pErr').textContent = '';
+    updateHeaderProfile();
+    switchTab('scan');
+  };
+
+  $('editProfileBtn').onclick = () => {
+    if (profile) {
+      $('pName').value = profile.name || '';
+      $('pAge').value = profile.age || '';
+      $('pMode').value = profile.mode || 'adult';
+      $('pCountry').value = profile.country || 'IN';
+      $('pAllergies').value = (profile.allergies || []).join(', ');
+      syncAllergyChips();
+      document.querySelectorAll('#condBoxes input').forEach(i => i.checked = (profile.conditions || []).includes(i.value));
+    }
+    switchTab('profile');
+  };
+
+  // Voice Assistant (Point 17)
+  const VK = 'labelscanner.speak';
+  $('autoVoiceToggle').checked = localStorage.getItem(VK) === '1';
+  $('autoVoiceToggle').onchange = e => localStorage.setItem(VK, e.target.checked ? '1' : '0');
+
+  function speakText(text) {
+    stopSpeech();
+    try {
+      const C = window.Capacitor;
+      const tts = C && ((C.Plugins && C.Plugins.TextToSpeech) || (C.registerPlugin && C.registerPlugin('TextToSpeech')));
+      if (tts && tts.speak) { tts.speak({ text, lang: 'en-US', rate: 1.0 }); return; }
+    } catch (e) {}
+    try {
+      if (window.speechSynthesis) {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        window.speechSynthesis.speak(u);
+      }
+    } catch (e) {}
+  }
+  function stopSpeech() {
+    try {
+      const C = window.Capacitor;
+      const tts = C && ((C.Plugins && C.Plugins.TextToSpeech) || (C.registerPlugin && C.registerPlugin('TextToSpeech')));
+      if (tts && tts.stop) tts.stop();
+    } catch (e) {}
+    try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) {}
+  }
+  $('testVoiceBtn').onclick = () => speakText('NutriShield voice assistant is active. Know before you use.');
+  $('stopVoiceBtn').onclick = stopSpeech;
+
+  // Progressive 4-Stage Camera + Torch + Barcode + Google Lens OCR (Fixes Android Camera Issue)
+  let stream = null, scanTimer = null, facing = 'environment', torchOn = false;
+  const setStatus = msg => { $('scanStatus').textContent = msg || ''; };
+
+  async function startCamera() {
+    stopCamera();
+    setStatus('Starting camera...');
+    try { if (window.api && window.api.warmup) window.api.warmup(); } catch (e) {}
+    const constraintsList = [
+      { video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      { video: { facingMode: facing }, audio: false },
+      { video: true, audio: false }
+    ];
+    for (const c of constraintsList) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(c);
+        break;
+      } catch (e) {}
+    }
+    if (!stream) {
+      setStatus('Live stream blocked by device. Opening Phone Camera Snap instead...');
+      $('camIn').click();
+      return;
+    }
+    const v = $('video');
+    v.srcObject = stream;
+    $('camStage').hidden = false;
+    await v.play().catch(() => {});
+    setStatus('Point at a barcode (auto-scans) OR frame ingredients & tap "Snap & Read Label".');
+
+    // Continuous non-blocking Barcode check
+    const bd = ('BarcodeDetector' in window) ? new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }) : null;
+    scanTimer = setInterval(async () => {
+      if (!v.videoWidth) return;
+      try {
+        if (bd) {
+          const codes = await bd.detect(v);
+          if (codes && codes.length && window.Barcode.isValidGtin(codes[0].rawValue)) {
+            lookupBarcode(codes[0].rawValue);
+            return;
+          }
+        }
+        if (window.ZXing) {
+          const c = document.createElement('canvas');
+          c.width = 640; c.height = 360;
+          c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+          const mr = new window.ZXing.MultiFormatReader();
+          const bmp = new window.ZXing.BinaryBitmap(new window.ZXing.HybridBinarizer(new window.ZXing.HTMLCanvasElementLuminanceSource(c)));
+          const res = mr.decode(bmp);
+          if (res && window.Barcode.isValidGtin(res.getText())) lookupBarcode(res.getText());
+        }
+      } catch (e) {}
+    }, 450);
+  }
+
+  function stopCamera() {
+    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    torchOn = false;
+    $('camStage').hidden = true;
+  }
+
+  $('startCamBtn').onclick = startCamera;
+  $('stopCamBtn').onclick = () => { stopCamera(); setStatus(''); };
+  $('flipCamBtn').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; startCamera(); };
+  $('torchBtn').onclick = async () => {
+    if (!stream) return;
+    const track = stream.getVideoTracks()[0];
+    try {
+      torchOn = !torchOn;
+      await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    } catch (e) { setStatus('Flashlight/Torch not supported on this camera lens.'); }
+  };
+
+  $('snapLensBtn').onclick = async () => {
+    const v = $('video');
+    if (!v.videoWidth) return;
+    const c = document.createElement('canvas');
+    const sx = Math.round(v.videoWidth * 0.06), sy = Math.round(v.videoHeight * 0.10);
+    const sw = Math.round(v.videoWidth * 0.88), sh = Math.round(v.videoHeight * 0.80);
+    c.width = sw; c.height = sh;
+    c.getContext('2d').drawImage(v, sx, sy, sw, sh, 0, 0, sw, sh);
+    stopCamera();
+    await runOcrOnCanvas(c);
+  };
+
+  $('nativeCamBtn').onclick = () => { stopCamera(); $('camIn').click(); };
+  $('uploadPhotoBtn').onclick = () => { stopCamera(); $('fileIn').click(); };
+
+  async function handleFileSelect(e) {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    e.target.value = '';
+    setStatus('Loading photo...');
+    const url = URL.createObjectURL(f);
+    try {
+      const im = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = no; i.src = url; });
+      const scale = Math.min(1, 1600 / Math.max(im.width, im.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(im.width * scale); c.height = Math.round(im.height * scale);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+      await runOcrOnCanvas(c);
+    } catch (err) {
+      setStatus('Could not read that photo. Try a clearer image.');
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+  $('camIn').onchange = handleFileSelect;
+  $('fileIn').onchange = handleFileSelect;
+
+  async function runOcrOnCanvas(canvas) {
+    setStatus('🔍 Google Lens SmartScan reading text from label...');
+    if (window.api) window.api.onProgress = msg => setStatus('🔍 Scanning label ' + msg);
+    try {
+      const res = await window.SmartScan.read(canvas, {
+        ocr: d => window.api.scanImage(d),
+        progress: m => setStatus('🔍 ' + m)
+      });
+      $('labelText').value = (res.text || '').trim();
+      setStatus('✅ Label scanned! Review text below or tap Analyze.');
+      analyzeCurrentText();
+    } catch (e) {
+      setStatus('Could not read label text clearly. Try closer lighting or type/paste ingredients below.');
+    } finally {
+      if (window.api) window.api.onProgress = null;
+    }
+  }
+
+  // Barcode Lookup (Point 9)
+  async function lookupBarcode(raw) {
+    const code = String(raw || '').replace(/\D/g, '');
+    if (!window.Barcode.isValidGtin(code)) {
+      setStatus('Invalid barcode number. Check digits and try again.');
+      return;
+    }
+    stopCamera();
+    $('bcInput').value = code;
+    setStatus('Looking up barcode ' + code + '...');
+    try {
+      const r = await window.api.lookupBarcode(code);
+      if (!r || !r.ok) {
+        setStatus('Barcode not found in online database. Snap a photo of the ingredient list instead!');
+        return;
+      }
+      setStatus('✅ Loaded ' + r.product.name);
+      $('labelText').value = r.product.ingredients || '';
+      const ing = r.product.ingredients ? window.Engine.analyze(r.product.ingredients, profile) : null;
+      const nut = window.Nutrition.assess(r.product.nutrition, { drink: window.Nutrition.isDrink(r.product.quantity) });
+      renderFullResult({ product: r.product, ing, nut, text: r.product.ingredients || '' });
+    } catch (e) {
+      setStatus('Network offline. Scan the ingredient text directly using the camera!');
+    }
+  }
+  $('bcLookupBtn').onclick = () => lookupBarcode($('bcInput').value);
+
+  // Instant Demo Buttons
+  const DEMOS = {
+    oats: {
+      name: 'NutriHarvest Whole Oats & Almond Crunch',
+      text: 'Ingredients: Whole wheat flour, rolled oats, almonds, honey, sunflower oil, chia seeds, vitamins.\nEnergy 378 kcal\nFat 7.2 g\nSaturated fat 1.1 g\nCarbohydrates 62 g\nSugars 5.8 g\nFibre 9.4 g\nProtein 13.5 g\nSalt 0.15 g'
+    },
+    noodles: {
+      name: 'Spicy Instant Masala Noodles',
+      text: 'Ingredients: Refined wheat flour (maida), palm oil, salt, sugar, monosodium glutamate (E621), tartrazine (E102), tbhq (E319), sodium carbonate, spices.\nEnergy 445 kcal\nFat 18.5 g\nSaturated fat 9.2 g\nCarbohydrates 61 g\nSugars 3.2 g\nFibre 2.1 g\nProtein 7.8 g\nSalt 2.6 g'
+    },
+    cola: {
+      name: 'Sparkling Tangy Citrus Soda (330 ml)',
+      text: 'Ingredients: Carbonated water, high fructose corn syrup, sugar, citric acid (E330), phosphoric acid (E338), sodium benzoate (E211), sunset yellow (E110), caffeine, artificial flavour.\nEnergy 190 kcal\nFat 0 g\nSaturated fat 0 g\nCarbohydrates 46 g\nSugars 44 g\nFibre 0 g\nProtein 0 g\nSalt 0.1 g'
+    }
+  };
+  document.querySelectorAll('[data-demo]').forEach(b => {
+    b.onclick = () => {
+      const d = DEMOS[b.dataset.demo];
+      $('labelText').value = d.text;
+      analyzeCurrentText(d.name);
+    };
+  });
+
+  const Store = window.Features.createStore(window.localStorage);
+  let currentResult = null, selectedFreq = 0;
+
+  function analyzeCurrentText(customTitle) {
+    const text = $('labelText').value.trim();
+    if (!text) { setStatus('Please scan a label or enter ingredients first.'); return; }
+    const ing = window.Engine.analyze(text, profile);
+    const parsed = window.Nutrition.parseNutrition(text);
+    const nut = parsed && parsed.count >= 2 ? window.Nutrition.assess(parsed, { drink: false }) : null;
+    const dummyProd = customTitle ? { name: customTitle, brand: 'NutriShield Demo Scan', quantity: '100 g', barcode: '' } : null;
+    renderFullResult({ product: dummyProd, ing, nut, text });
+  }
+  $('analyzeTextBtn').onclick = () => analyzeCurrentText();
+  $('clearScanBtn').onclick = () => { $('labelText').value = ''; $('bcInput').value = ''; $('resultArea').innerHTML = ''; setStatus(''); stopSpeech(); };
+
+  function renderFullResult(ctx) {
+    currentResult = ctx;
+    const { product, ing, nut, text } = ctx;
+    const ingScore = ing ? ing.score : null;
+    const nutScore = nut ? nut.score : null;
+    const score = window.Nutrition.overall(ingScore, nutScore);
+    const hazard = window.Nutrition.worst(ing ? ing.hazard : null, nut ? nut.level : null);
+    const snap = window.Features.snapshot(ctx, score, hazard);
+    Store.addHistory(snap);
+
+    const vClass = score >= 70 ? 'v-good' : score >= 45 ? 'v-mod' : 'v-bad';
+    const vWord = score === null ? 'Needs Clearer Text' : score >= 75 ? 'Excellent / Safe Choice' : score >= 50 ? 'Moderate / Limit Intake' : 'High Risk / Best Avoided';
+    const adv = window.Advice.evaluate({ ing, nut, product, profile, overall: score, hazard, serving: '100g' });
+    const prodApps = getProductApps(product, ing, nut);
+
+    // Allergy Banner (Point 2 & 8)
+    let allergyHtml = '';
+    if (ing && ing.warnings && ing.warnings.length) {
+      allergyHtml = ing.warnings.map(w => `<div class="alert-red">🚨 CRITICAL ALLERGY ALERT: Contains or may contain <u>${esc(w.ingredient)}</u> (Matches your "${esc(w.allergy)}" allergy!)</div>`).join('');
+    } else if (profile && profile.allergies && profile.allergies.length) {
+      allergyHtml = `<div class="alert-green">✅ ALLERGY CHECK CLEAR: None of your listed allergies (${esc(profile.allergies.join(', '))}) were detected in this scan.</div>`;
+    }
+
+    // Who CAN vs Who CANNOT Consume (Point 8)
+    let cannotHtml = '', canHtml = '';
+    if (adv && adv.groups) {
+      const badG = adv.groups.filter(g => g.status !== 'ok');
+      const okG = adv.groups.filter(g => g.status === 'ok');
+      cannotHtml = badG.length
+        ? badG.map(g => `<div style="margin-bottom:8px"><span class="chip ${g.status === 'avoid' ? 'bad' : 'mod'}">${g.status === 'avoid' ? '⛔ CANNOT / AVOID' : '⚠️ LIMIT'}</span> <b>${esc(g.label)}</b><div class="small muted">${esc(g.reasons.join(' '))}</div></div>`).join('')
+        : '<p class="small muted">No special restrictions triggered for standard groups.</p>';
+      canHtml = okG.length
+        ? okG.map(g => `<span class="chip good" style="margin:3px">✅ ${esc(g.label)}</span>`).join(' ')
+        : '<p class="small muted">Only recommended as a rare treat.</p>';
+    }
+
+    // Daily Consumption Forecast (Point 6)
+    const freqResult = adv ? window.Advice.frequency(adv.tier, selectedFreq) : null;
+
+    // Ingredient Breakdown with 0-100 Score, Hazard & 2 Applications (Points 1 & 4)
+    let ingListHtml = '';
+    if (ing && ing.found && ing.found.length) {
+      ingListHtml = ing.found.slice().sort((a, b) => a.score - b.score).map(x => {
+        const barCol = x.score >= 70 ? '#00C853' : x.score >= 45 ? '#FFB300' : '#FF1744';
+        const hazChip = x.hazard === 'high' ? 'bad' : x.hazard === 'moderate' ? 'mod' : 'good';
+        const apps = getIngredientApps(x);
+        return `<div class="ing-item">
+          <div class="row" style="justify-content:space-between">
+            <b style="font-size:16px;text-transform:capitalize">${esc(x.name)}</b>
+            <div class="row">
+              <span class="chip ${hazChip}">Hazard: ${esc(x.hazard.toUpperCase())}</span>
+              <span class="chip" style="background:var(--surface);border:1.5px solid var(--line)"><b>${x.score}/100</b></span>
+            </div>
+          </div>
+          <div class="score-bar"><i style="width:${x.score}%;background:${barCol}"></i></div>
+          <div class="small">${esc(x.note)}</div>
+          <div class="app-box">
+            <b>🔬 2 Applications of ${esc(x.name)} (Point 1):</b><br>
+            • ${esc(apps[0])}<br>
+            • ${esc(apps[1])}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      ingListHtml = '<p class="muted small">No known ingredients recognized yet. Check the text box above and tap Analyze.</p>';
+    }
+
+    // Calories & Health Effects (Point 5)
+    let nutHtml = '';
+    if (nut) {
+      const walkMins = nut.kcal ? Math.round(nut.kcal / 4.2) : 0;
+      nutHtml = `<div class="card">
+        <h3>🔥 Calories & Effect on Health (Point 5)</h3>
+        <div class="row" style="margin:10px 0">
+          <div class="chip ${nut.kcal > 400 ? 'bad' : 'good'}" style="font-size:18px;padding:10px 16px">⚡ ${nut.kcal !== null ? nut.kcal + ' kcal / 100g' : 'Calories N/A'}</div>
+          ${walkMins ? `<span class="small muted">🏃 Equals ~${walkMins} mins of brisk walking per 100g</span>` : ''}
+        </div>
+        <div class="row" style="gap:6px;margin-bottom:10px">
+          ${nut.rows.map(r => `<span class="chip ${r.level === 'high' ? 'bad' : r.level === 'medium' ? 'mod' : 'good'}">${esc(r.label)}: ${r.value}g (${esc(r.level || 'ok')})</span>`).join('')}
+        </div>
+        <h4>Health Impact Summary:</h4>
+        <ul style="margin:6px 0;padding-left:20px">${nut.effects.map(e => `<li>${esc(e)}</li>`).join('')}</ul>
+      </div>`;
+    }
+
+    // Accuracy & Rating Confidence (Point 27)
+    const covPct = ing ? Math.round((ing.coverage || 0) * 100) : 0;
+    const confLabel = covPct >= 80 ? 'High Accuracy (Verified Rule Match)' : covPct >= 50 ? 'Medium Accuracy' : 'Partial Match (Edit OCR text if needed)';
+
+    // Compare Pool (Point 3 & Point 7)
+    const pool = Store.history().filter(h => h.key !== snap.key).concat(BENCHMARKS);
+    const cmpTarget = pool[0];
+    const cmpData = cmpTarget ? window.Features.compare(snap, cmpTarget) : null;
+
+    const isFav = Store.isFav(snap.key);
+
+    $('resultArea').innerHTML = `
+      ${allergyHtml}
+      <div class="verdict-banner ${vClass}">
+        <div class="score-ring">
+          <b>${score !== null ? score : '--'}</b>
+          <span>OUT OF 100</span>
+        </div>
+        <div style="flex:1">
+          <div class="small" style="font-weight:800;text-transform:uppercase;opacity:.9">${esc(product ? product.brand : 'NutriShield™ Analysis')}</div>
+          <h2 style="font-size:24px;margin:2px 0">${esc(snap.name)}</h2>
+          <div style="font-size:18px;font-weight:900;margin-bottom:8px">${esc(vWord)} • Hazard: ${esc(hazard.toUpperCase())}</div>
+          <div class="row">
+            ${ingScore !== null ? `<span class="chip" style="background:rgba(255,255,255,.85);color:#052E16">🧪 Ingredients: ${ingScore}/100</span>` : ''}
+            ${nutScore !== null ? `<span class="chip" style="background:rgba(255,255,255,.85);color:#052E16">🔥 Nutrition: ${nutScore}/100</span>` : ''}
+            <span class="chip" style="background:rgba(255,255,255,.85);color:#052E16">🎯 Confidence: ${covPct}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions Bar (Points 11, 12, 17) -->
+      <div class="card">
+        <div class="row">
+          <button type="button" class="primary" id="resSpeakBtn">🔊 Speak Result</button>
+          <button type="button" id="resStopSpeakBtn">⏹️ Stop</button>
+          <button type="button" class="${isFav ? 'amber' : ''}" id="resFavBtn">${isFav ? '★ Saved in Favorites' : '☆ Add to Favorites'}</button>
+          <button type="button" class="danger" id="resReportBtn">⚠️ Report Problem</button>
+        </div>
+      </div>
+
+      <!-- Point 1: 2 Applications of This Product -->
+      <div class="card" style="border-left:6px solid var(--brand)">
+        <h3>💡 Google Lens Insight: 2 Applications of This Product (Point 1)</h3>
+        <p style="margin:6px 0"><b>${esc(prodApps[0])}</b></p>
+        <p style="margin:6px 0"><b>${esc(prodApps[1])}</b></p>
+      </div>
+
+      <!-- Point 6: Do You Consume This Daily? & What Happens If Consumed Daily -->
+      ${adv ? `<div class="card">
+        <h3>📅 Do You Consume This Product Daily? (Point 6)</h3>
+        <div class="row" style="margin:10px 0">
+          <button type="button" class="pill-toggle ${selectedFreq === 0 ? 'on' : ''}" data-freq="0">Every Day (Daily)</button>
+          <button type="button" class="pill-toggle ${selectedFreq === 1 ? 'on' : ''}" data-freq="1">A Few Times a Week</button>
+          <button type="button" class="pill-toggle ${selectedFreq === 2 ? 'on' : ''}" data-freq="2">Rarely / Once a Week</button>
+        </div>
+        <div class="${freqResult.ok ? 'alert-green' : 'alert-red'}" style="margin:10px 0">
+          ${esc(freqResult.text)}<br>
+          <span class="small"><b>NutriShield™ Advice:</b> ${esc(adv.rec)}</span>
+        </div>
+        <h4>What Happens If You Consume It Every Day:</h4>
+        <ul style="margin:6px 0;padding-left:20px">
+          ${adv.daily.map(d => `<li>${esc(d)}</li>`).join('')}
+        </ul>
+      </div>` : ''}
+
+      <!-- Point 8: Remark Who CAN'T Consume It & Who CAN -->
+      <div class="grid2">
+        <div class="card" style="border-top:5px solid var(--bright-red)">
+          <h3>⛔ Who CANNOT / Should Avoid</h3>
+          ${cannotHtml}
+        </div>
+        <div class="card" style="border-top:5px solid var(--good-green)">
+          <h3>✅ Who CAN Safely Consume</h3>
+          <div>${canHtml}</div>
+        </div>
+      </div>
+
+      ${nutHtml}
+
+      <!-- Point 4 & Point 1: Ingredient Ratings /100, Hazard & 2 Applications -->
+      <div class="card">
+        <h3>🧪 Ingredient Ratings (Out of 100), Hazard & 2 Applications (${ing ? ing.found.length : 0} Matched)</h3>
+        ${ingListHtml}
+      </div>
+
+      <!-- Point 3 & Point 7: Ask If Product Is Same or Different & Compare With Same-Type Product -->
+      <div class="card">
+        <h3>⚖️ Is This Product the SAME or DIFFERENT? & Compare (Points 3 & 7)</h3>
+        <p class="small muted">Check if a reformulated pack matches your expectation (e.g., "no palm oil, sugar free, vegan") or compare side-by-side with a product of the same type:</p>
+        <div class="row" style="margin:8px 0">
+          <input id="expectClaimIn" placeholder="Type expectation (e.g. sugar free, no palm oil, vegan)" style="flex:1">
+          <button type="button" class="primary" id="checkExpectBtn">Check Same / Different</button>
+        </div>
+        <div id="expectResultBox"></div>
+
+        ${cmpData ? `<div style="margin-top:14px">
+          <h4>Side-by-Side Comparison vs. "${esc(cmpTarget.name)}"</h4>
+          <p class="small"><b>Verdict:</b> ${esc(cmpData.summary)}</p>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13.5px">
+              <tr style="border-bottom:2px solid var(--line);text-align:left">
+                <th style="padding:6px">Metric</th>
+                <th style="padding:6px">${esc(snap.name)}</th>
+                <th style="padding:6px">${esc(cmpTarget.name)}</th>
+              </tr>
+              ${cmpData.rows.slice(0, 6).map(r => `<tr style="border-bottom:1px solid var(--line)">
+                <td style="padding:6px"><b>${esc(r.label)}</b></td>
+                <td style="padding:6px;${r.better === 'a' ? 'color:var(--good-green);font-weight:900' : ''}">${r.a !== null ? r.a : '-'}</td>
+                <td style="padding:6px;${r.better === 'b' ? 'color:var(--good-green);font-weight:900' : ''}">${r.b !== null ? r.b : '-'}</td>
+              </tr>`).join('')}
+            </table>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <!-- Point 27: How Correct Is the Rating and Advice -->
+      <div class="card" style="border-left:6px solid var(--bright-amber)">
+        <h3>🎯 How Correct Is This Rating & Advice? (Point 27)</h3>
+        <p class="small"><b>Confidence Level:</b> ${esc(confLabel)} (${covPct}% of scanned tokens matched in the NutriShield™ Toxicology Database).</p>
+        <p class="small muted"><b>Deterministic Formula (100% Rule-Based, No AI):</b> Overall score weights <b>60% Ingredient Safety</b> (penalizing high-hazard additives like E211, E102, trans fats, nitrites, and hidden sugars) + <b>40% UK FSA / WHO Nutrient Thresholds</b> (calories, sugar, saturated fat, sodium, fibre, and protein). Always verify printed allergen labels on curved packets.</p>
+      </div>
+    `;
+
+    // Bind Result Interactions
+    const speechSummary = window.Features.speech({ product, nut, adv, score, hazard, verdict: vWord, warnings: ing ? ing.warnings : [] });
+    if ($('autoVoiceToggle').checked) speakText(speechSummary);
+
+    $('resSpeakBtn').onclick = () => speakText(speechSummary);
+    $('resStopSpeakBtn').onclick = stopSpeech;
+    $('resFavBtn').onclick = () => { Store.toggleFav(snap); renderFullResult(currentResult); };
+    $('resReportBtn').onclick = () => { switchTab('settings'); $('fbInput').value = `Issue with product "${snap.name}": `; $('fbInput').focus(); };
+
+    document.querySelectorAll('[data-freq]').forEach(b => {
+      b.onclick = () => { selectedFreq = parseInt(b.dataset.freq, 10); renderFullResult(currentResult); };
+    });
+
+    $('checkExpectBtn').onclick = () => {
+      const claim = $('expectClaimIn').value.trim();
+      const ex = window.Features.expectation(claim, { product, ing, nut, text, overall: score });
+      $('expectResultBox').innerHTML = `<div class="${ex.verdict === 'match' ? 'alert-green' : 'alert-red'}" style="margin-top:8px">
+        <b>${ex.verdict === 'match' ? '✅ SAME / MATCHES EXPECTATION' : '⚠️ DIFFERENT FROM EXPECTATION'}:</b>
+        ${ex.items.map(i => `<div>• <b>${esc(i.claim)}:</b> ${esc(i.why)}</div>`).join('')}
+      </div>`;
+    };
+  }
+
+  // History & Favorites Renderer
+  function renderHistory() {
+    const favs = Store.favorites(), hist = Store.history();
+    const listHtml = (arr, emptyMsg) => arr.length
+      ? arr.map(x => `<div class="ing-item row" style="justify-content:space-between">
+          <div><b>${esc(x.name)}</b><div class="small muted">Score: ${x.score !== null ? x.score + '/100' : 'N/A'} • Hazard: ${esc(x.hazard || 'unknown')}</div></div>
+          <span class="chip ${x.score >= 70 ? 'good' : x.score >= 45 ? 'mod' : 'bad'}">${x.score !== null ? x.score : '--'}/100</span>
+        </div>`).join('')
+      : `<p class="small muted">${emptyMsg}</p>`;
+    $('favListWrap').innerHTML = `<h3>★ Saved Favorites (${favs.length})</h3>${listHtml(favs, 'Tap "Add to Favorites" on any scan result to save it here.')}<h3 style="margin-top:16px">🕒 Recent Scans (${hist.length})</h3>${listHtml(hist, 'No scans yet.')}`;
+  }
+
+  // Feedback & Satisfaction Stars (Points 12, 13, 14)
+  document.querySelectorAll('#starBar [data-star]').forEach(b => {
+    b.onclick = () => {
+      const r = parseInt(b.dataset.star, 10);
+      Store.addFeedback({ type: 'rating', rating: r });
+      $('fbStatus').textContent = `🎉 Thank you for rating NutriShield™ ${r} out of 5 stars!`;
+    };
+  });
+  $('sendFbBtn').onclick = () => {
+    const t = $('fbInput').value.trim();
+    if (!t) { $('fbStatus').textContent = 'Please type your feedback first.'; return; }
+    Store.addFeedback({ type: 'feedback', text: t });
+    $('fbInput').value = '';
+    $('fbStatus').textContent = '✅ Feedback saved to device storage!';
+  };
+  $('reportIssueBtn').onclick = () => {
+    const t = $('fbInput').value.trim() || 'Reported scanner/label issue';
+    Store.addFeedback({ type: 'report', text: t });
+    $('fbInput').value = '';
+    $('fbStatus').textContent = '⚠️ Issue report logged on device!';
+  };
+
+  // Boot into Profile if first time, else Scanner
+  if (profile && profile.name) {
+    updateHeaderProfile();
+    switchTab('scan');
+  } else {
+    switchTab('profile');
+  }
+})();
+</script>
+</body>
+</html>
