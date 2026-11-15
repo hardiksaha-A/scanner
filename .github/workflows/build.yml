@@ -14,11 +14,11 @@ jobs:
 
       - name: Unpack app and inject NutriShield index.html + logo
         run: |
-          echo "Files in repository:"
+          echo "Files in the repository:"
           ls -la
           ZIP="$(find . -maxdepth 3 -name 'label-scanner-upload.zip' -not -path './.git/*' | head -1)"
           if [ -n "$ZIP" ]; then
-            echo "Unpacking $ZIP..."
+            echo "Using $ZIP"
             rm -rf _unzipped
             unzip -oq "$ZIP" -d _unzipped
             PKG="$(find _unzipped -maxdepth 2 -name package.json | head -1)"
@@ -26,30 +26,26 @@ jobs:
             PKG="$(find . -name package.json -not -path '*/node_modules/*' -not -path './.git/*' | head -1)"
           fi
           if [ -z "$PKG" ]; then
-            echo "::error::package.json not found. Keep label-scanner-upload.zip in the repo."
+            echo "::error::package.json not found. Upload label-scanner-upload.zip to the repository."
             exit 1
           fi
           DIR="$(dirname "$PKG")"
           echo "APP_DIR=$DIR" >> "$GITHUB_ENV"
 
-          # 1. Inject new NutriShield index.html if present in repo root or www/
+          # 1. Inject updated NutriShield index.html
           if [ -f "index.html" ]; then
             cp -f "index.html" "$DIR/www/index.html"
-            echo "Injected root index.html into $DIR/www/index.html"
           elif [ -f "www/index.html" ] && [ "$DIR" != "." ]; then
             cp -f "www/index.html" "$DIR/www/index.html"
-            echo "Injected www/index.html into $DIR/www/index.html"
           fi
 
-          # 2. Detect uploaded NutriShield logo (.png) and copy to www/logo.png
+          # 2. Copy uploaded NutriShield logo to www/logo.png
           LOGO="$(find . -maxdepth 2 \( -name 'logo.png' -o -name '1794688712297.png' -o -name '*.png' \) -not -path './_unzipped/*' -not -path './.git/*' | head -1)"
           if [ -n "$LOGO" ]; then
             cp -f "$LOGO" "$DIR/www/logo.png"
-            echo "LOGO_PATH=$LOGO" >> "$GITHUB_ENV"
-            echo "Copied $LOGO to $DIR/www/logo.png"
           fi
 
-          # 3. Update appName to NutriShield in capacitor.config.json
+          # 3. Set appName to NutriShield in capacitor.config.json
           node -e "
             const fs = require('fs');
             const p = '$DIR/capacitor.config.json';
@@ -75,23 +71,23 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: node scripts/prep.js
 
-      - name: Create Android project & configure NutriShield icons + Camera permissions
+      - name: Create Android project, icons & permissions
         working-directory: ${{ env.APP_DIR }}
         run: |
           npx cap add android
 
-          # 1. Inject Camera, Flashlight, Internet, and Android 11+ TTS/Camera queries into AndroidManifest.xml
+          # 1. Inject Camera, Flashlight, Internet, and TTS/Camera queries into AndroidManifest.xml
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           PERMS='<uses-permission android:name="android.permission.INTERNET" /><uses-permission android:name="android.permission.CAMERA" /><uses-permission android:name="android.permission.FLASHLIGHT" /><uses-feature android:name="android.hardware.camera" android:required="false" /><uses-feature android:name="android.hardware.camera.autofocus" android:required="false" /><queries><intent><action android:name="android.intent.action.TTS_SERVICE" /></intent><intent><action android:name="android.media.action.IMAGE_CAPTURE" /></intent></queries></manifest>'
           sed -i "s#</manifest>#$PERMS#" "$MANIFEST"
 
-          # 2. Set Android App Name to NutriShield in strings.xml
+          # 2. Rename app to NutriShield in Android strings.xml
           STRINGS="android/app/src/main/res/values/strings.xml"
           if [ -f "$STRINGS" ]; then
             sed -i 's#>Label Scanner<#NutriShield<#g' "$STRINGS"
           fi
 
-          # 3. Patch MainActivity.java so Android requests runtime Camera permission on launch
+          # 3. Request runtime Camera permission on launch in MainActivity.java
           MAIN_JAVA="$(find android/app/src/main/java -name 'MainActivity.java' | head -1)"
           if [ -n "$MAIN_JAVA" ]; then
             cat << 'EOF' > "$MAIN_JAVA"
@@ -117,9 +113,10 @@ jobs:
           EOF
           fi
 
-          # 4. Generate Android Launcher Icons from www/logo.png if present
+          # 4. Install Pillow and generate Android launcher icons from www/logo.png
           if [ -f "www/logo.png" ]; then
-            python3 - << 'PYEOF'
+            python3 -m pip install --quiet pillow || true
+            python3 - << 'PYEOF' || true
           import os
           from PIL import Image
           im = Image.open('www/logo.png').convert('RGBA')
@@ -160,7 +157,7 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
-      - name: Retry without voice plugin if needed
+      - name: Retry without voice plugin
         if: steps.build.outcome == 'failure'
         working-directory: ${{ env.APP_DIR }}
         run: |
