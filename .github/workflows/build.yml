@@ -30,17 +30,23 @@ jobs:
           if [ -z "$PKG" ]; then echo "::error::package.json not found. Upload label-scanner-upload.zip (without unzipping) to the repository."; exit 1; fi
           DIR="$(dirname "$PKG")"
           for f in capacitor.config.json www/index.html scripts/prep.js; do
-            [ -f "$DIR/$f" ] || { echo "::error::Missing $f in $DIR. Upload the complete app."; exit 1; }
+            [ -f "$DIR/$f" ] || { echo "::error::Missing $f in$DIR. Upload the complete app."; exit 1; }
           done
-          if [ -f "index.html" ]; then
-            cp -f "index.html" "$DIR/www/index.html"
-          elif [ -f "www/index.html" ] && [ "$DIR" != "." ]; then
-            cp -f "www/index.html" "$DIR/www/index.html"
+
+          # Find updated index.html in root or loose folder and copy into _unzipped/www/index.html
+          NEW_HTML="$(find . -maxdepth 3 -name 'index.html' -not -path './_unzipped/*' -not -path './.git/*' | head -1)"
+          if [ -n "$NEW_HTML" ]; then
+            cp -f "$NEW_HTML" "$DIR/www/index.html"
+            echo "Applied updated HTML from $NEW_HTML"
           fi
-          LOGO="$(find . -maxdepth 2 \( -name 'logo.png' -o -name '1794688712297.png' -o -name '*.png' \) -not -path './_unzipped/*' -not -path './.git/*' | head -1)"
+
+          # Find uploaded NutriShield logo and resize to lightweight 256x256 for fast WebView startup
+          LOGO="$(find . -maxdepth 3 \(-name 'logo.png' -o -name '1794688712297.png' -o -name '*.png'\) -not -path './_unzipped/*' -not -path './.git/*' | head -1)"
           if [ -n "$LOGO" ]; then
-            cp -f "$LOGO" "$DIR/www/logo.png"
+            ffmpeg -y -i "$LOGO" -vf "scale=256:256" "$DIR/www/logo.png" >/dev/null 2>&1 || cp -f "$LOGO" "$DIR/www/logo.png"
+            echo "Applied logo from $LOGO"
           fi
+
           sed -i 's/"Label Scanner"/"NutriShield"/g' "$DIR/capacitor.config.json"
           echo "App folder: $DIR"
           echo "APP_DIR=$DIR" >> "$GITHUB_ENV"
@@ -57,7 +63,7 @@ jobs:
       - name: Prepare OCR files
         working-directory: ${{ env.APP_DIR }}
         run: node scripts/prep.js
-      - name: Create Android project
+      - name: Create Android project and set outside home-screen icon
         working-directory: ${{ env.APP_DIR }}
         run: |
           npx cap add android
@@ -66,17 +72,17 @@ jobs:
             sed -i 's/>Label Scanner</>NutriShield</g' android/app/src/main/res/values/strings.xml
           fi
           if [ -f "www/logo.png" ]; then
-            for d in android/app/src/main/res/mipmap-*; do
+            # Remove adaptive XMLs so Android is forced to use our PNG home screen icons outside
+            rm -rf android/app/src/main/res/mipmap-anydpi*
+            rm -rf android/app/src/main/res/drawable*/ic_launcher*
+            for pair in "mipmap-mdpi:48" "mipmap-hdpi:72" "mipmap-xhdpi:96" "mipmap-xxhdpi:144" "mipmap-xxxhdpi:192"; do
+              folder="${pair%%:*}"
+              sz="${pair##*:}"
+              d="android/app/src/main/res/$folder"
               if [ -d "$d" ]; then
-                if command -v convert >/dev/null 2>&1; then
-                  convert "www/logo.png" -resize 192x192 "$d/ic_launcher.png" || cp -f "www/logo.png" "$d/ic_launcher.png"
-                  convert "www/logo.png" -resize 192x192 "$d/ic_launcher_round.png" || cp -f "www/logo.png" "$d/ic_launcher_round.png"
-                  convert "www/logo.png" -resize 324x324 "$d/ic_launcher_foreground.png" || cp -f "www/logo.png" "$d/ic_launcher_foreground.png"
-                else
-                  cp -f "www/logo.png" "$d/ic_launcher.png"
-                  cp -f "www/logo.png" "$d/ic_launcher_round.png"
-                  cp -f "www/logo.png" "$d/ic_launcher_foreground.png"
-                fi
+                ffmpeg -y -i "www/logo.png" -vf "scale=${sz}:${sz}" "$d/ic_launcher.png" >/dev/null 2>&1 \vert{}\vert{} cp -f "www/logo.png" "$d/ic_launcher.png"
+                cp -f "$d/ic_launcher.png" "$d/ic_launcher_round.png"
+                cp -f "$d/ic_launcher.png" "$d/ic_launcher_foreground.png"
               fi
             done
           fi
