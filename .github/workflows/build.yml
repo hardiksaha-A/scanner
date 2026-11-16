@@ -18,6 +18,10 @@ jobs:
     timeout-minutes: 45
     env:
       DEBUG_KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_B64 }}
+      RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+      RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+      RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+      RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -149,6 +153,35 @@ jobs:
           # The .gz copy is only a fallback: Android packaging may drop or rename it, which is fine.
           grep -qF "assets/public/vendor/tess/lang/eng.traineddata.gz" <<<"$LIST" || echo "::warning::eng.traineddata.gz is not in the APK (expected on some Android builds; eng.lstm.bin is used instead)"
           echo "APK OK: $(du -h "$APK" | cut -f1)"
+
+      # Optional signed release APK. Runs only when the four RELEASE_* secrets exist; failure here never blocks the debug APK.
+      - name: Build signed release APK
+        id: release
+        if: env.RELEASE_KEYSTORE_B64 != '' && env.RELEASE_KEYSTORE_PASSWORD != '' && env.RELEASE_KEY_ALIAS != '' && env.RELEASE_KEY_PASSWORD != ''
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -eo pipefail
+          cd "$APP_DIR/android" && chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+          UNSIGNED="$(find app/build/outputs/apk/release -name '*.apk' | head -1)"
+          [ -n "$UNSIGNED" ] || { echo "::error::release APK was not produced"; exit 1; }
+          BT="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+          echo "$RELEASE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          "$BT/zipalign" -f -p 4 "$UNSIGNED" "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/release.jks" --ks-key-alias "$RELEASE_KEY_ALIAS" --ks-pass env:RELEASE_KEYSTORE_PASSWORD --key-pass env:RELEASE_KEY_PASSWORD --out "$GITHUB_WORKSPACE/NutriShield-release.apk" "$RUNNER_TEMP/aligned.apk"
+          "$BT/apksigner" verify --verbose "$GITHUB_WORKSPACE/NutriShield-release.apk"
+          rm -f "$RUNNER_TEMP/release.jks" "$RUNNER_TEMP/aligned.apk"
+          LIST="$(unzip -l "$GITHUB_WORKSPACE/NutriShield-release.apk")"
+          for f in assets/public/index.html assets/public/vendor/tess/tesseract.min.js assets/public/vendor/tess/lang/eng.lstm.bin; do
+            grep -qF "$f" <<<"$LIST" || { echo "::error::release APK is missing $f"; exit 1; }
+          done
+          echo "Release APK OK: $(du -h "$GITHUB_WORKSPACE/NutriShield-release.apk" | cut -f1)"
+
+      - uses: actions/upload-artifact@v4
+        if: steps.release.outcome == 'success'
+        with:
+          name: NutriShield-release-APK
+          path: NutriShield-release.apk
 
       - uses: actions/upload-artifact@v4
         with:
