@@ -109,6 +109,14 @@ jobs:
             sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#&\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />#' "$M"
           fi
           grep -q 'android.permission.CAMERA' "$M" || { echo "::error::Could not add the camera permission"; exit 1; }
+          # Ask Google Play services to download the on-device text model at install time (so the first scan also works offline)
+          if ! grep -q 'mlkit.vision.DEPENDENCIES' "$M"; then
+            sed -i 's#</application>#    <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="ocr" />\n    </application>#' "$M"
+          fi
+          # Security: no cloud backup of the profile (name, age, allergies) and no plain-http traffic
+          if grep -q 'android:allowBackup=' "$M"; then sed -i 's/android:allowBackup="[a-z]*"/android:allowBackup="false"/' "$M"; else sed -i 's#<application#<application android:allowBackup="false"#' "$M"; fi
+          if grep -q 'android:usesCleartextTraffic=' "$M"; then sed -i 's/android:usesCleartextTraffic="[a-z]*"/android:usesCleartextTraffic="false"/' "$M"; else sed -i 's#<application#<application android:usesCleartextTraffic="false"#' "$M"; fi
+          grep -q 'android:allowBackup="false"' "$M" && grep -q 'android:usesCleartextTraffic="false"' "$M" || { echo "::error::Could not apply the backup and cleartext security settings"; exit 1; }
           python3 -c "import sys, xml.dom.minidom as m; m.parse(sys.argv[1]); print('AndroidManifest.xml is well-formed')" "$M"
           npx cap sync android
           A=android/app/src/main/assets/public
@@ -128,8 +136,20 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
 
-      - name: Retry without voice plugin
+      # If the build fails, first drop the on-device text reader (the Tesseract reader still works), then also the voice plugin.
+      - name: Retry without on-device text reader
+        id: retry1
         if: steps.build.outcome == 'failure'
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npm uninstall @pantrist/capacitor-plugin-ml-kit-text-recognition
+          sed -i '/mlkit.vision.DEPENDENCIES/d' android/app/src/main/AndroidManifest.xml
+          npx cap sync android
+          cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Retry without voice plugin
+        if: steps.build.outcome == 'failure' && steps.retry1.outcome == 'failure'
         working-directory: ${{ env.APP_DIR }}
         run: |
           npm uninstall @capacitor-community/text-to-speech
@@ -196,3 +216,4 @@ jobs:
           cp -f "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" NutriShield.apk
           gh release upload latest NutriShield.apk --clobber || gh release create latest NutriShield.apk --title "NutriShield" --notes "Latest NutriShield APK"
           gh release edit latest --title "NutriShield" --notes "Download the latest NutriShield APK below." || true
+
