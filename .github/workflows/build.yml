@@ -1,9 +1,22 @@
-name: Build NutriShield APK
+name: Build NutriShield APK and AAB
 
 on:
   push:
     branches: [main, master]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      drop_mlkit:
+        description: 'Deliberately build WITHOUT the ML Kit on-device text reader (Tesseract only)'
+        type: boolean
+        default: false
+      drop_tts:
+        description: 'Deliberately build WITHOUT the text-to-speech plugin'
+        type: boolean
+        default: false
+      publish_latest:
+        description: 'Publish the debug APK to the public "latest" GitHub release (off by default: legal documents are drafts)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -22,6 +35,8 @@ jobs:
       RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
       RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
       RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+      DROP_MLKIT: ${{ inputs.drop_mlkit }}
+      DROP_TTS: ${{ inputs.drop_tts }}
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +94,24 @@ jobs:
         run: |
           set -eo pipefail
           node scripts/prep.js
-          node scripts/verify.js
+          node scripts/verify.js   # includes scripts/check-deps.js (no ad/analytics SDKs, approved hosts only) and scripts/compliance-test.js
+
+      - name: Legal documents gate (labels builds that still contain draft legal text)
+        id: legal
+        shell: bash
+        working-directory: ${{ env.APP_DIR }}
+        run: node scripts/legal-gate.js
+
+      - name: Deliberate plugin exclusion (only when requested by a manual run)
+        if: inputs.drop_mlkit == true || inputs.drop_tts == true
+        shell: bash
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          set -eo pipefail
+          [ "$DROP_MLKIT" = "true" ] && npm uninstall @pantrist/capacitor-plugin-ml-kit-text-recognition
+          [ "$DROP_TTS" = "true" ] && npm uninstall @capacitor-community/text-to-speech
+          echo "::warning::Plugins deliberately excluded: mlkit=$DROP_MLKIT tts=$DROP_TTS. The app behaves differently from the standard build; the privacy documents must match."
+          true
 
       - name: Create Android project, then apply icons, launch splash and camera permission
         shell: bash
@@ -110,7 +142,7 @@ jobs:
           fi
           grep -q 'android.permission.CAMERA' "$M" || { echo "::error::Could not add the camera permission"; exit 1; }
           # Ask Google Play services to download the on-device text model at install time (so the first scan also works offline)
-          if ! grep -q 'mlkit.vision.DEPENDENCIES' "$M"; then
+          if [ "$DROP_MLKIT" != "true" ] && ! grep -q 'mlkit.vision.DEPENDENCIES' "$M"; then
             sed -i 's#</application>#    <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="ocr" />\n    </application>#' "$M"
           fi
           # Security: no cloud backup of the profile (name, age, allergies) and no plain-http traffic
@@ -118,6 +150,12 @@ jobs:
           if grep -q 'android:usesCleartextTraffic=' "$M"; then sed -i 's/android:usesCleartextTraffic="[a-z]*"/android:usesCleartextTraffic="false"/' "$M"; else sed -i 's#<application#<application android:usesCleartextTraffic="false"#' "$M"; fi
           grep -q 'android:allowBackup="false"' "$M" && grep -q 'android:usesCleartextTraffic="false"' "$M" || { echo "::error::Could not apply the backup and cleartext security settings"; exit 1; }
           python3 -c "import sys, xml.dom.minidom as m; m.parse(sys.argv[1]); print('AndroidManifest.xml is well-formed')" "$M"
+          # Version: versionName from package.json, versionCode from the run number (Play needs a higher code for every upload)
+          G=android/app/build.gradle
+          VN="$(node -p "require('./package.json').version")"
+          sed -i -E "s/versionCode [0-9]+/versionCode ${GITHUB_RUN_NUMBER}/; s/versionName \"[^\"]*\"/versionName \"${VN}\"/" "$G"
+          grep -qE "versionCode ${GITHUB_RUN_NUMBER}\$" "$G" && grep -qF "versionName \"${VN}\"" "$G" || { echo "::error::Could not set versionCode/versionName in $G (template changed?)"; exit 1; }
+          echo "versionName=$VN versionCode=$GITHUB_RUN_NUMBER"
           npx cap sync android
           A=android/app/src/main/assets/public
           echo "Language data copied into the Android project:"; ls -la "$A/vendor/tess/lang"
@@ -130,31 +168,14 @@ jobs:
         shell: bash
         run: mkdir -p ~/.android && echo "$DEBUG_KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
 
-      - name: Build APK
+      # No silent fallbacks: if Gradle fails, the workflow fails. Use the drop_mlkit / drop_tts inputs for a deliberate reduced build.
+      - name: Build debug APK
         id: build
-        continue-on-error: true
-        working-directory: ${{ env.APP_DIR }}
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
-
-      # If the build fails, first drop the on-device text reader (the Tesseract reader still works), then also the voice plugin.
-      - name: Retry without on-device text reader
-        id: retry1
-        if: steps.build.outcome == 'failure'
-        continue-on-error: true
+        shell: bash
         working-directory: ${{ env.APP_DIR }}
         run: |
-          npm uninstall @pantrist/capacitor-plugin-ml-kit-text-recognition
-          sed -i '/mlkit.vision.DEPENDENCIES/d' android/app/src/main/AndroidManifest.xml
-          npx cap sync android
-          cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
-
-      - name: Retry without voice plugin
-        if: steps.build.outcome == 'failure' && steps.retry1.outcome == 'failure'
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          npm uninstall @capacitor-community/text-to-speech
-          npx cap sync android
-          cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+          cd android && chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon || { echo "::error::Gradle build failed. Plugins are NOT dropped automatically. To build without ML Kit or TTS, re-run manually with drop_mlkit / drop_tts."; exit 1; }
 
       - name: Verify the APK contains the logo and the OCR engine
         shell: bash
@@ -173,6 +194,74 @@ jobs:
           # The .gz copy is only a fallback: Android packaging may drop or rename it, which is fine.
           grep -qF "assets/public/vendor/tess/lang/eng.traineddata.gz" <<<"$LIST" || echo "::warning::eng.traineddata.gz is not in the APK (expected on some Android builds; eng.lstm.bin is used instead)"
           echo "APK OK: $(du -h "$APK" | cut -f1)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NutriShield-APK${{ steps.legal.outputs.suffix }}
+          path: "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk"
+
+      # Records what was actually built. Permissions beyond INTERNET and CAMERA are reported as warnings for review (not failures:
+      # merged library manifests can legitimately add normal permissions; the human decision is recorded in the handover).
+      - name: Build information and manifest audit
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$APP_DIR"
+          MM="$(find android/app/build/intermediates -name AndroidManifest.xml -path '*merged_manifest*' 2>/dev/null | head -1)"
+          {
+            echo "### Build information"
+            echo "- commit: $GITHUB_SHA"; echo "- run: $GITHUB_RUN_NUMBER"; echo "- legal documents ready: ${{ steps.legal.outputs.ready }} (placeholders: ${{ steps.legal.outputs.count }})"
+            echo "- plugins excluded on request: mlkit=${DROP_MLKIT:-false} tts=${DROP_TTS:-false}"
+            echo '- capacitor/native plugins installed:'; npm ls --depth=0 --omit=dev 2>/dev/null | sed 's/^/    /'
+            if [ -n "$MM" ]; then
+              echo "- merged manifest: $MM"; echo '- permissions:'; grep -o 'uses-permission[^/]*android:name="[^"]*"' "$MM" | sed 's/.*android:name=/    /' | sort -u
+              grep -o 'android:allowBackup="[a-z]*"' "$MM" | head -1 | sed 's/^/- /'; grep -o 'android:usesCleartextTraffic="[a-z]*"' "$MM" | head -1 | sed 's/^/- /'
+              for p in $(grep -o 'uses-permission[^/]*android:name="[^"]*"' "$MM" | sed 's/.*android:name="//; s/"//' | sort -u); do
+                case "$p" in android.permission.INTERNET|android.permission.CAMERA) ;; *) echo "::warning::Extra permission in merged manifest: $p (review and update the privacy documents / Play declarations)";; esac
+              done
+            else echo "- merged manifest not found (AGP layout changed?): permissions NOT audited"; echo "::warning::Merged manifest not found; permissions were not audited."; fi
+          } | tee -a "$GITHUB_STEP_SUMMARY" "$RUNNER_TEMP/build-info.txt"
+          cp "$RUNNER_TEMP/build-info.txt" "$GITHUB_WORKSPACE/build-info.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NutriShield-build-info
+          path: build-info.txt
+
+      # Android App Bundle for Google Play. Signed with the upload key ONLY if all four RELEASE_* secrets exist; otherwise it is
+      # produced UNSIGNED and labelled so (Play will not accept it). No key is generated or stored by this workflow.
+      - name: Build release AAB
+        id: aab
+        shell: bash
+        run: |
+          set -eo pipefail
+          cd "$APP_DIR/android" && chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon || { echo "::error::bundleRelease failed"; exit 1; }
+          AAB="$(find app/build/outputs/bundle/release -name '*.aab' | head -1)"
+          [ -n "$AAB" ] || { echo "::error::AAB was not produced"; exit 1; }
+          LIST="$(unzip -l "$AAB")"
+          for f in base/manifest/AndroidManifest.xml base/assets/public/index.html base/assets/public/vendor/tess/lang/eng.lstm.bin; do
+            grep -qF "$f" <<<"$LIST" || { echo "::error::AAB is missing $f"; exit 1; }
+          done
+          OUT="$GITHUB_WORKSPACE/NutriShield-release${{ steps.legal.outputs.suffix }}"
+          if [ -n "$RELEASE_KEYSTORE_B64" ] && [ -n "$RELEASE_KEYSTORE_PASSWORD" ] && [ -n "$RELEASE_KEY_ALIAS" ] && [ -n "$RELEASE_KEY_PASSWORD" ]; then
+            echo "$RELEASE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            cp "$AAB" "$OUT-SIGNED.aab"
+            jarsigner -sigalg SHA256withRSA -digestalg SHA-256 -keystore "$RUNNER_TEMP/release.jks" -storepass:env RELEASE_KEYSTORE_PASSWORD -keypass:env RELEASE_KEY_PASSWORD "$OUT-SIGNED.aab" "$RELEASE_KEY_ALIAS"
+            jarsigner -verify -certs "$OUT-SIGNED.aab" | tail -3
+            rm -f "$RUNNER_TEMP/release.jks"
+            echo "path=$OUT-SIGNED.aab" >> "$GITHUB_OUTPUT"; echo "signed=true" >> "$GITHUB_OUTPUT"
+          else
+            cp "$AAB" "$OUT-UNSIGNED.aab"
+            echo "::warning::AAB is UNSIGNED (RELEASE_* secrets missing). It cannot be uploaded to Google Play."
+            echo "path=$OUT-UNSIGNED.aab" >> "$GITHUB_OUTPUT"; echo "signed=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "AAB: $(du -h "$AAB" | cut -f1) signed=$(grep -c signed=true "$GITHUB_OUTPUT" || true)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NutriShield-AAB
+          path: NutriShield-release*.aab
 
       # Optional signed release APK. Runs only when the four RELEASE_* secrets exist; failure here never blocks the debug APK.
       - name: Build signed release APK
@@ -200,19 +289,16 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: steps.release.outcome == 'success'
         with:
-          name: NutriShield-release-APK
+          name: NutriShield-release-APK${{ steps.legal.outputs.suffix }}
           path: NutriShield-release.apk
 
-      - uses: actions/upload-artifact@v4
-        with:
-          name: NutriShield-APK
-          path: "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk"
-
+      # Off by default: this makes the APK publicly downloadable. Enable with the publish_latest input or repo variable PUBLISH_LATEST_APK=true.
       - name: Update Permanent APK Link
+        if: inputs.publish_latest == true || vars.PUBLISH_LATEST_APK == 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp -f "${{ env.APP_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk" NutriShield.apk
-          gh release upload latest NutriShield.apk --clobber || gh release create latest NutriShield.apk --title "NutriShield" --notes "Latest NutriShield APK"
+          gh release upload latest NutriShield.apk --clobber || gh release create latest NutriShield.apk --title "NutriShield" --notes "Latest NutriShield APK. Development build: legal documents may still be drafts."
           gh release edit latest --title "NutriShield" --notes "Download the latest NutriShield APK below." || true
